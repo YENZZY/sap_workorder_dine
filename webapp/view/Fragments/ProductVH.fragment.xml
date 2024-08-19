@@ -1,0 +1,171 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+>
+    <ValueHelpDialog
+        title="제품"
+        ok="onPageVHOk"
+        cancel="onPageVHCancel"
+        afterClose="onPageVHClose"
+        supportRanges="true"
+        key="Product"
+        supportMultiselect="false"
+        >
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onPageVHSearch"
+                isRunningInValueHelpDialog="true"
+            >
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="Product"
+                        label="제품"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Product"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'Product' }
+                                }">
+                                <core:Item key="{productModel>Product}" text="{productModel>Product}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="ProductExternalID"
+                        label="제품 외부 ID"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="ProductExternalID"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'ProductExternalID' }
+                                }">
+                                <core:Item key="{productModel>ProductExternalID}" text="{productModel>ProductExternalID}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="IndustrySector"
+                        label="산업 부문"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="IndustrySector"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'IndustrySector' }
+                                }">
+                                <core:Item key="{productModel>IndustrySector}" text="{productModel>IndustrySector}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="ProductType"
+                        label="제품 유형"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="ProductType"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'ProductType' }
+                                }">
+                                <core:Item key="{productModel>ProductType}" text="{productModel>ProductType}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="ProductGroup"
+                        label="제품 그룹"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="ProductGroup"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'ProductGroup' }
+                                }">
+                                <core:Item key="{productModel>ProductGroup}" text="{productModel>ProductGroup}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="GrossWeight"
+                        label="총 중량"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="GrossWeight"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'GrossWeight' }
+                                }">
+                                <core:Item key="{productModel>GrossWeight}" text="{productModel>GrossWeight}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="NetWeight"
+                        label="순 중량"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="NetWeight"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'NetWeight' }
+                                }">
+                                <core:Item key="{productModel>NetWeight}" text="{productModel>NetWeight}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="productGroup"
+                        name="WeightUnit"
+                        label="무게 단위"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="WeightUnit"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'productModel>/',
+                                    sorter: { path: 'WeightUnit' }
+                                }">
+                                <core:Item key="{productModel>WeightUnit}" text="{productModel>WeightUnit}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

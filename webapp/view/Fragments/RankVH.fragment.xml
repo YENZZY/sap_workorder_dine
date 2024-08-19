@@ -1,0 +1,135 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+>
+    <ValueHelpDialog
+        title="참조 코드"
+        ok="onPageVHOk"
+        cancel="onPageVHCancel"
+        afterClose="onPageVHClose"
+        supportRanges="true"
+        key="Referencecodeid"
+        supportMultiselect="false"
+        >
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onPageVHSearch"
+                isRunningInValueHelpDialog="true"
+            >
+                <fb:filterGroupItems>
+                 <fb:FilterGroupItem
+                        groupName="rankGroup"
+                        name="Companycode"
+                        label="회사 코드"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Companycode"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'rankModel>/',
+                                    sorter: { path: 'Companycode' }
+                                }">
+                                <core:Item key="{rankModel>Companycode}" text="{rankModel>Companycode}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="rankGroup"
+                        name="Referencecodetype"
+                        label="참조 코드 타입"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Referencecodetype"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'rankModel>/',
+                                    sorter: { path: 'Referencecodetype' }
+                                }">
+                                <core:Item key="{rankModel>Referencecodetype}" text="{rankModel>Referencecodetype}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="rankGroup"
+                        name="Referencecodeid"
+                        label="참조 코드"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Referencecodeid"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'rankModel>/',
+                                    sorter: { path: 'Referencecodeid' }
+                                }">
+                                <core:Item key="{rankModel>Referencecodeid}" text="{rankModel>Referencecodeid}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                     <fb:FilterGroupItem
+                        groupName="rankGroup"
+                        name="Description"
+                        label="상세 설명"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Description"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'rankModel>/',
+                                    sorter: { path: 'Description' }
+                                }">
+                                <core:Item key="{rankModel>Description}" text="{rankModel>Description}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                     <fb:FilterGroupItem
+                        groupName="rankGroup"
+                        name="Activestate"
+                        label="활성화 여부"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Activestate"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'rankModel>/',
+                                    sorter: { path: 'Activestate' }
+                                }">
+                                <core:Item key="{rankModel>Activestate}" text="{rankModel>Activestate}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                     <fb:FilterGroupItem
+                        groupName="rankGroup"
+                        name="Referencevalue"
+                        label="참조 값"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Referencevalue"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'rankModel>/',
+                                    sorter: { path: 'Referencevalue' }
+                                }">
+                                <core:Item key="{rankModel>Referencevalue}" text="{rankModel>Referencevalue}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

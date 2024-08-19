@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns:sap="http://www.sap.com/Protocols/SAPData">
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_AGGREGATION',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="Org.OData.Aggregation.V1" Alias="Aggregation"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_ANALYTICS',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="com.sap.vocabularies.Analytics.v1" Alias="Analytics"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CAPABILITIES',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="Capabilities"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_CODELIST',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="com.sap.vocabularies.CodeList.v1" Alias="SAP__CodeList"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMON',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="com.sap.vocabularies.Common.v1" Alias="Common"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_COMMUNICATION',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="com.sap.vocabularies.Communication.v1" Alias="Communication"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_MEASURES',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="Org.OData.Measures.V1" Alias="Measures"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_ODM',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="com.sap.vocabularies.ODM.v1" Alias="SAP__ODM"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_PERSONALDATA',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="com.sap.vocabularies.PersonalData.v1" Alias="PersonalData"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_UI',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="com.sap.vocabularies.UI.v1" Alias="UI"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/iwfnd/catalogservice;v=2/Vocabularies(TechnicalName='%2FIWBEP%2FVOC_VALIDATION',Version='0001',SAP__Origin='')/$value" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+        <edmx:Include Namespace="Org.OData.Validation.V1" Alias="Validation"/>
+    </edmx:Reference>
+    <edmx:DataServices m:DataServiceVersion="2.0">
+        <Schema Namespace="cds_zsdpp_salesorderitem" xml:lang="ko" sap:schema-version="1" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+            <EntityType Name="PlantType" sap:label="플랜트" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Plant"/>
+                </Key>
+                <Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4" sap:display-format="UpperCase" sap:text="PlantName" sap:label="플랜트"/>
+                <Property Name="PlantName" Type="Edm.String" MaxLength="30" sap:label="플랜트 이름"/>
+                <Property Name="ValuationArea" Type="Edm.String" MaxLength="4" sap:display-format="UpperCase" sap:label="평가 영역"/>
+                <Property Name="PlantCustomer" Type="Edm.String" MaxLength="10" sap:display-format="UpperCase" sap:label="플랜트의 고객 번호"/>
+                <Property Name="PlantSupplier" Type="Edm.String" MaxLength="10" sap:display-format="UpperCase" sap:label="공급업체 번호" sap:quickinfo="플랜트의 공급업체 번호"/>
+                <Property Name="FactoryCalendar" Type="Edm.String" MaxLength="2" sap:display-format="UpperCase" sap:label="근무 달력" sap:quickinfo="근무 달력 키"/>
+                <Property Name="DefaultPurchasingOrganization" Type="Edm.String" MaxLength="4" sap:display-format="UpperCase" sap:label="구매 조직"/>
+                <Property Name="SalesOrganization" Type="Edm.String" MaxLength="4" sap:display-format="UpperCase" sap:label="ICB 영업 조직" sap:quickinfo="회사 간 청구를 위한 영업 조직"/>
+                <Property Name="AddressID" Type="Edm.String" MaxLength="10" sap:display-format="UpperCase" sap:label="주소"/>
+                <Property Name="PlantCategory" Type="Edm.String" MaxLength="1" sap:display-format="UpperCase" sap:label="플랜트범주" sap:quickinfo="플랜트 범주"/>
+                <Property Name="DistributionChannel" Type="Edm.String" MaxLength="2" sap:display-format="UpperCase" sap:label="유통 경로" sap:quickinfo="회사 간 청구를 위한 유통 경로"/>
+                <Property Name="Division" Type="Edm.String" MaxLength="2" sap:display-format="UpperCase" sap:label="회사 간 청구 부문"/>
+                <Property Name="Language" Type="Edm.String" MaxLength="2" sap:label="언어 키"/>
+                <Property Name="IsMarkedForArchiving" Type="Edm.Boolean" sap:label="아카이빙 플래그" sap:quickinfo="마스터 레코드에 대한 중앙 아카이빙 마커"/>
+                <Property Name="BusinessPlace" Type="Edm.String" MaxLength="4" sap:display-format="UpperCase" sap:label="사업장"/>
+            </EntityType>
+            <EntityType Name="ProdOrderType" sap:label="작업지시 생성 생산 오더 관리" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Uuid"/>
+                </Key>
+                <Property Name="Uuid" Type="Edm.Guid" Nullable="false" sap:label="UUID" sap:quickinfo="16 Byte UUID in 16 Bytes (Raw Format)" sap:creatable="false" sap:updatable="false"/>
+                <Property Name="Status" Type="Edm.String" MaxLength="2"/>
+                <Property Name="MfgOrderType" Type="Edm.String" MaxLength="2"/>
+                <Property Name="ManufacturingOrder" Type="Edm.String" MaxLength="12"/>
+                <Property Name="SalesOrder" Type="Edm.String" MaxLength="10"/>
+                <Property Name="SalesOrderItem" Type="Edm.String" MaxLength="6" sap:display-format="NonNegative"/>
+                <Property Name="ManufacturingOrderType" Type="Edm.String" MaxLength="4"/>
+                <Property Name="Material" Type="Edm.String" MaxLength="40"/>
+                <Property Name="ProductDescription" Type="Edm.String" MaxLength="40"/>
+                <Property Name="MfgOrderPlannedStartDate" Type="Edm.DateTime" Precision="0" sap:display-format="Date"/>
+                <Property Name="MfgOrderPlannedTotalQty" Type="Edm.Decimal" Precision="13" Scale="3"/>
+                <Property Name="ProductionUnit" Type="Edm.String" MaxLength="3" sap:semantics="unit-of-measure"/>
+                <Property Name="ProductionVersion" Type="Edm.String" MaxLength="4"/>
+                <Property Name="Yy1ProdRankOrd" Type="Edm.String" MaxLength="40"/>
+                <Property Name="Yy1PrioRankOrd" Type="Edm.String" MaxLength="40"/>
+                <Property Name="Yy1ProdText" Type="Edm.String" MaxLength="100"/>
+                <Property Name="ProductionPlant" Type="Edm.String" MaxLength="4"/>
+                <Property Name="CreatedAt" Type="Edm.DateTimeOffset" Precision="7" sap:label="타임스탬프" sap:quickinfo="긴 형식의 UTC 타임스탬프(YYYYMMDDhhmmssmmmuuun)"/>
+                <Property Name="CreatedBy" Type="Edm.String" MaxLength="12" sap:display-format="UpperCase" sap:label="사용자 이름"/>
+                <Property Name="LastChangedAt" Type="Edm.DateTimeOffset" Precision="7" sap:label="타임스탬프" sap:quickinfo="긴 형식의 UTC 타임스탬프(YYYYMMDDhhmmssmmmuuun)"/>
+                <Property Name="LastChangedBy" Type="Edm.String" MaxLength="12" sap:display-format="UpperCase" sap:label="사용자 이름"/>
+            </EntityType>
+            <EntityType Name="MfgOrderType" sap:label="작업지시 생성 value help (오더유형)" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="ManufacturingOrderType"/>
+                    <PropertyRef Name="Language"/>
+                </Key>
+                <Property Name="ManufacturingOrderType" Type="Edm.String" Nullable="false" MaxLength="4" sap:display-format="UpperCase" sap:text="ManufacturingOrderTypeName" sap:label="오더 유형" sap:quickinfo="제조 오더 유형"/>
+                <Property Name="Language" Type="Edm.String" Nullable="false" MaxLength="2" sap:label="언어 키"/>
+                <Property Name="ManufacturingOrderTypeName" Type="Edm.String" MaxLength="40" sap:label="오더 유형 이름" sap:quickinfo="제조 오더 유형 이름"/>
+            </EntityType>
+            <EntityType Name="ProductionVersionType" sap:label="작업지시 생성 value help (생산 버전)" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Material"/>
+                    <PropertyRef Name="Plant"/>
+                    <PropertyRef Name="ProductionVersion"/>
+                </Key>
+                <Property Name="Material" Type="Edm.String" Nullable="false" MaxLength="18" sap:display-format="UpperCase" sap:label="자재" sap:quickinfo="자재 번호"/>
+                <Property Name="Plant" Type="Edm.String" Nullable="false" MaxLength="4" sap:display-format="UpperCase" sap:label="플랜트"/>
+                <Property Name="ProductionVersion" Type="Edm.String" Nullable="false" MaxLength="4" sap:display-format="UpperCase" sap:text="ProductionVersionText" sap:label="생산 버전"/>
+                <Property Name="ProductionVersionText" Type="Edm.String" MaxLength="40" sap:label="생산 버전 텍스트" sap:quickinfo="생산 버전 내역"/>
+                <Property Name="ValidityStartDate" Type="Edm.DateTime" Precision="0" sap:display-format="Date" sap:label="유효 기간 시작일"/>
+                <Property Name="ValidityEndDate" Type="Edm.DateTime" Precision="0" sap:display-format="Date" sap:label="유효 기간 종료일"/>
+            </EntityType>
+            <EntityType Name="ProductType" sap:label="작업지시 생성 value help (제품)" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="Product"/>
+                </Key>
+                <Property Name="Product" Type="Edm.String" Nullable="false" MaxLength="18" sap:display-format="UpperCase" sap:label="제품" sap:quickinfo="제품 번호"/>
+                <Property Name="ProductExternalID" Type="Edm.String" MaxLength="40" sap:display-format="UpperCase" sap:label="자재" sap:quickinfo="자재 번호의 외부 표현"/>
+                <Property Name="IndustrySector" Type="Edm.String" MaxLength="1" sap:display-format="UpperCase" sap:label="산업"/>
+                <Property Name="ProductType" Type="Edm.String" MaxLength="4" sap:display-format="UpperCase" sap:label="제품 유형"/>
+                <Property Name="ProductGroup" Type="Edm.String" MaxLength="9" sap:display-format="UpperCase" sap:label="제품 그룹"/>
+                <Property Name="BaseUnit" Type="Edm.String" MaxLength="3" sap:label="기본 단위" sap:semantics="unit-of-measure"/>
+                <Property Name="GrossWeight" Type="Edm.Decimal" Precision="13" Scale="3" sap:unit="WeightUnit" sap:label="총 중량"/>
+                <Property Name="NetWeight" Type="Edm.Decimal" Precision="13" Scale="3" sap:unit="WeightUnit" sap:label="순 중량"/>
+                <Property Name="WeightUnit" Type="Edm.String" MaxLength="3" sap:label="중량 단위" sap:semantics="unit-of-measure"/>
+            </EntityType>
+            <EntityType Name="SalesOrderType" sap:label="작업지시 생성 value help (판매 문서)" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="SalesOrder"/>
+                    <PropertyRef Name="SalesOrderItem"/>
+                </Key>
+                <Property Name="SalesOrder" Type="Edm.String" Nullable="false" MaxLength="10" sap:display-format="UpperCase" sap:label="판매 오더"/>
+                <Property Name="SalesOrderItem" Type="Edm.String" Nullable="false" MaxLength="6" sap:display-format="NonNegative" sap:label="품목" sap:quickinfo="판매 오더 품목"/>
+                <Property Name="Material" Type="Edm.String" MaxLength="18" sap:display-format="UpperCase" sap:label="자재" sap:quickinfo="자재 번호"/>
+                <Property Name="Plant" Type="Edm.String" MaxLength="4" sap:display-format="UpperCase" sap:label="플랜트" sap:quickinfo="플랜트(자사 또는 외부)"/>
+                <Property Name="OrderQuantity" Type="Edm.Decimal" Precision="15" Scale="3" sap:unit="OrderQuantityUnit" sap:label="오더 수량" sap:quickinfo="누적 오더 수량(판매 단위)"/>
+                <Property Name="OrderQuantityUnit" Type="Edm.String" MaxLength="3" sap:label="판매 단위" sap:semantics="unit-of-measure"/>
+            </EntityType>
+            <EntityType Name="ProdLvlType" sap:label="참조 코드 관리 (생산 순위)" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="uuid"/>
+                    <PropertyRef Name="companycode"/>
+                    <PropertyRef Name="referencecodetype"/>
+                    <PropertyRef Name="referencecodeid"/>
+                </Key>
+                <Property Name="uuid" Type="Edm.Guid" Nullable="false" sap:label="UUID" sap:quickinfo="16 Byte UUID in 16 Bytes (Raw Format)"/>
+                <Property Name="companycode" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="referencecodetype" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="referencecodeid" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="description" Type="Edm.String" MaxLength="100"/>
+                <Property Name="activestate" Type="Edm.String" MaxLength="1"/>
+                <Property Name="referencevalue" Type="Edm.String" MaxLength="40"/>
+            </EntityType>
+            <EntityType Name="SchedPriType" sap:label="참조 코드 관리 (우선 순위)" sap:content-version="1">
+                <Key>
+                    <PropertyRef Name="uuid"/>
+                    <PropertyRef Name="companycode"/>
+                    <PropertyRef Name="referencecodetype"/>
+                    <PropertyRef Name="referencecodeid"/>
+                </Key>
+                <Property Name="uuid" Type="Edm.Guid" Nullable="false" sap:label="UUID" sap:quickinfo="16 Byte UUID in 16 Bytes (Raw Format)"/>
+                <Property Name="companycode" Type="Edm.String" Nullable="false" MaxLength="4"/>
+                <Property Name="referencecodetype" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="referencecodeid" Type="Edm.String" Nullable="false" MaxLength="40"/>
+                <Property Name="description" Type="Edm.String" MaxLength="100"/>
+                <Property Name="activestate" Type="Edm.String" MaxLength="1"/>
+                <Property Name="referencevalue" Type="Edm.String" MaxLength="40"/>
+            </EntityType>
+            <EntityContainer Name="cds_zsdpp_salesorderitem_Entities" m:IsDefaultEntityContainer="true" sap:message-scope-supported="true" sap:supported-formats="atom json xlsx">
+                <EntitySet Name="Plant" EntityType="cds_zsdpp_salesorderitem.PlantType" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:searchable="true" sap:content-version="1"/>
+                <EntitySet Name="ProdOrder" EntityType="cds_zsdpp_salesorderitem.ProdOrderType" sap:content-version="1"/>
+                <EntitySet Name="MfgOrder" EntityType="cds_zsdpp_salesorderitem.MfgOrderType" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1"/>
+                <EntitySet Name="ProductionVersion" EntityType="cds_zsdpp_salesorderitem.ProductionVersionType" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1"/>
+                <EntitySet Name="Product" EntityType="cds_zsdpp_salesorderitem.ProductType" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1"/>
+                <EntitySet Name="SalesOrder" EntityType="cds_zsdpp_salesorderitem.SalesOrderType" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1"/>
+                <EntitySet Name="ProdLvl" EntityType="cds_zsdpp_salesorderitem.ProdLvlType" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1"/>
+                <EntitySet Name="SchedPri" EntityType="cds_zsdpp_salesorderitem.SchedPriType" sap:creatable="false" sap:updatable="false" sap:deletable="false" sap:content-version="1"/>
+            </EntityContainer>
+            <Annotation Term="Core.SchemaVersion" String="1.0.0" xmlns="http://docs.oasis-open.org/odata/ns/edm"/>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Common.ApplyMultiUnitBehaviorForSortingAndFiltering" Bool="true"/>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.ProdOrderType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Common.ChangedAt" Path="LastChangedAt"/>
+                <Annotation Term="Common.ChangedBy" Path="LastChangedBy"/>
+                <Annotation Term="Common.CreatedAt" Path="CreatedAt"/>
+                <Annotation Term="Common.CreatedBy" Path="CreatedBy"/>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/MfgOrder" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/Plant" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/ProdLvl" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/Product" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/ProductionVersion" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/SalesOrder" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/SchedPri" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.DeleteRestrictions">
+                    <Record>
+                        <PropertyValue Property="Deletable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="false"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="Capabilities.UpdateRestrictions">
+                    <Record>
+                        <PropertyValue Property="Updatable" Bool="false"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities/ProdOrder" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Capabilities.InsertRestrictions">
+                    <Record>
+                        <PropertyValue Property="Insertable" Bool="true"/>
+                    </Record>
+                </Annotation>
+                <Annotation Term="SAP__core.OptimisticConcurrency">
+                    <Collection/>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.PlantType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Common.SAPObjectNodeType">
+                    <Record>
+                        <PropertyValue Property="Name" String="Plant"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.PlantType/PlantCategory" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Common.SAPObjectNodeTypeReference" String="PlantCategory"/>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.ProductType/ProductGroup" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Common.SAPObjectNodeTypeReference" String="ProductGroup"/>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.ProductType/ProductType" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Common.SAPObjectNodeTypeReference" String="ProductType"/>
+            </Annotations>
+            <Annotations Target="cds_zsdpp_salesorderitem.cds_zsdpp_salesorderitem_Entities" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+                <Annotation Term="Org.OData.Capabilities.V1.BatchSupport">
+                    <Record Type="Org.OData.Capabilities.V1.BatchSupportType">
+                        <PropertyValue Property="ReferencesAcrossChangeSetsSupported" Bool="true"/>
+                    </Record>
+                </Annotation>
+            </Annotations>
+            <atom:link rel="self" href="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/sap/ZSBPP_SALESORDERITEM/$metadata" xmlns:atom="http://www.w3.org/2005/Atom"/>
+            <atom:link rel="latest-version" href="https://my414091-api.s4hana.cloud.sap/sap/opu/odata/sap/ZSBPP_SALESORDERITEM/$metadata" xmlns:atom="http://www.w3.org/2005/Atom"/>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>

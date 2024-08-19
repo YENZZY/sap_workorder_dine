@@ -1,0 +1,99 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+>
+    <ValueHelpDialog
+        title="생산 버전"
+        ok="onPageVHOk"
+        cancel="onPageVHCancel"
+        afterClose="onPageVHClose"
+        supportRanges="true"
+        key="ProductionVersion"
+        supportMultiselect="false"
+        >
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onPageVHSearch"
+                isRunningInValueHelpDialog="true"
+            >
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="prodVerGroup"
+                        name="ProductionVersion"
+                        label="생산 버전"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="ProductionVersion"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'prodVerModel>/',
+                                    sorter: { path: 'ProductionVersion' }
+                                }">
+                                <core:Item key="{prodVerModel>ProductionVersion}" text="{prodVerModel>ProductionVersion}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="prodVerGroup"
+                        name="Material"
+                        label="제품"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Material"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'prodVerModel>/',
+                                    sorter: { path: 'Material' }
+                                }">
+                                <core:Item key="{prodVerModel>Material}" text="{prodVerModel>Material}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="prodVerGroup"
+                        name="Plant"
+                        label="플랜트"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Plant"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'prodVerModel>/',
+                                    sorter: { path: 'Plant' }
+                                }">
+                                <core:Item key="{prodVerModel>Plant}" text="{prodVerModel>Plant}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="prodVerGroup"
+                        name="ProductionVersionText"
+                        label="생산 버전명"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="ProductionVersionText"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'prodVerModel>/',
+                                    sorter: { path: 'ProductionVersionText' }
+                                }">
+                                <core:Item key="{prodVerModel>ProductionVersionText}" text="{prodVerModel>ProductionVersionText}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

@@ -1,0 +1,134 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+>
+    <ValueHelpDialog
+        title="판매 문서"
+        ok="onPageVHOk"
+        cancel="onPageVHCancel"
+        afterClose="onPageVHClose"
+        supportRanges="true"
+        supportMultiselect="false"
+        key=""
+        >
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onPageVHSearch"
+                isRunningInValueHelpDialog="true">
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="soGroup"
+                        name="SalesOrder"
+                        label="판매 문서"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="SalesOrder"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'soModel>/',
+                                    sorter: { path: 'SalesOrder' }
+                                }">
+                                <core:Item key="{soModel>SalesOrder}" text="{soModel>SalesOrder}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="soGroup"
+                        name="SalesOrderItem"
+                        label="판매 문서 품목"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="SalesOrderItem"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'soModel>/',
+                                    sorter: { path: 'SalesOrderItem' }
+                                }">
+                                <core:Item key="{soModel>SalesOrderItem}" text="{soModel>SalesOrderItem}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="soGroup"
+                        name="Material"
+                        label="제품"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Material"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'soModel>/',
+                                    sorter: { path: 'Material' }
+                                }">
+                                <core:Item key="{soModel>Material}" text="{soModel>Material}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="soGroup"
+                        name="Plant"
+                        label="플랜트"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Plant"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'soModel>/',
+                                    sorter: { path: 'Plant' }
+                                }">
+                                <core:Item key="{soModel>Plant}" text="{soModel>Plant}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="soGroup"
+                        name="OrderQuantity"
+                        label="판매문서 수량"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="OrderQuantity"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'soModel>/',
+                                    sorter: { path: 'OrderQuantity' }
+                                }">
+                                <core:Item key="{soModel>OrderQuantity}" text="{soModel>OrderQuantity}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="soGroup"
+                        name="OrderQuantityUnit"
+                        label="판매문서 수량 단위"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="OrderQuantityUnit"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'soModel>/',
+                                    sorter: { path: 'OrderQuantityUnit' }
+                                }">
+                                <core:Item key="{soModel>OrderQuantityUnit}" text="{soModel>OrderQuantityUnit}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

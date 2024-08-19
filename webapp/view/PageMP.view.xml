@@ -1,0 +1,204 @@
+<mvc:View controllerName="dinewkorder.controller.PageMP"
+    displayBlock="true"
+    height="100%"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+>
+    <f:DynamicPage showFooter="true">
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:heading>
+                    <Title text="단일 생성(양산)" titleStyle="H2"/>
+                </f:heading>
+            </f:DynamicPageTitle>
+        </f:title>
+        <f:header>
+            <f:DynamicPageHeader>   
+            </f:DynamicPageHeader>
+        </f:header>
+        <f:content>
+            <VBox justifyContent="Center" alignContent="Center" class="sapUiSmallMarginTop">
+                <HBox class="sapUiMediumMarginBottom">
+                    <VBox class="sapUiMediumMarginEnd">
+                        <Label text="제품" required="true"/>
+                        <MultiInput
+                            width="15em"
+                            id="productVH"
+                            valueHelpRequest="onPageVH"
+                            suggestionItemSelected="onPageVHSelected"
+                            suggestionRows="{
+                            path: 'productModel>/'
+                            }"
+                            liveChange="onTokenUpdate"
+                        >
+                            <suggestionColumns>
+                                <Column>
+                                    <Label text="제품"/>
+                                </Column>
+                            </suggestionColumns>
+                            <suggestionRows>
+                                <ColumnListItem>
+                                    <Label text="{productModel>Product}"/>
+                                </ColumnListItem>
+                            </suggestionRows>
+                        </MultiInput>
+                    </VBox>
+                    <VBox class="sapUiMediumMarginEnd">
+                        <Label text="플랜트" required="true"/>
+                        <MultiInput
+                            width="15em"
+                            id="plantVH"
+                            valueHelpRequest="onPageVH"
+                            suggestionItemSelected="onPageVHSelected"
+                            suggestionRows="{
+                            path: 'plantModel>/'
+                            }"
+                            liveChange="onTokenUpdate"
+                        >
+                            <suggestionColumns>
+                                <Column>
+                                    <Label text="플랜트"/>
+                                </Column>
+                            </suggestionColumns>
+                            <suggestionRows>
+                                <ColumnListItem>
+                                    <Label text="{plantModel>Plant}"/>
+                                </ColumnListItem>
+                            </suggestionRows>
+                        </MultiInput>
+                    </VBox>
+                    <VBox class="sapUiMediumMarginEnd" >
+                        <Label text="오더 유형" required="true"/>
+                        <Select
+                            selectedKey="{dataModel>/ManufacturingOrderType}"
+                            items="{
+                                path: 'mfgOrderModel>/',
+                                sorter: { path: 'ManufacturingOrderType' }
+                            }"
+                            width="17em"
+                        >
+                            <core:Item key="{mfgOrderModel>ManufacturingOrderType}" text="{mfgOrderModel>ManufacturingOrderType}" />
+                        </Select>
+                    </VBox>
+                    <VBox>
+                        <Label text="오더 유형 내역"/>
+                        <Input type="Text" width="15em" value="{path: 'mfgOrderModel>ManufacturingOrderTypeName', formatter: 'onMfgOrderName'}" editable="false"/>
+                    </VBox>
+                </HBox>
+                <HBox class="sapUiMediumMarginBottom">
+                    <VBox class="sapUiMediumMarginEnd">
+                        <Label text="작업지시 수량" required="true"/>
+                        <Input type="Text" width="15em"/>
+                    </VBox>
+                    <VBox class="sapUiMediumMarginEnd">
+                        <Label text="생산 버전" required="true"/>
+                        <MultiInput
+                            width="15em"
+                            id="prodVerVH"
+                            valueHelpRequest="onPageVH"
+                            suggestionItemSelected="onPageVHSelected"
+                            suggestionRows="{
+                            path: 'prodVerModel>/'
+                            }"
+                            liveChange="onTokenUpdate"
+                        >
+                            <suggestionColumns>
+                                <Column>
+                                    <Label text="생산 버전"/>
+                                </Column>
+                            </suggestionColumns>
+                            <suggestionRows>
+                                <ColumnListItem>
+                                    <Label text="{prodVerModel>ProductionVersion}"/>
+                                </ColumnListItem>
+                            </suggestionRows>
+                        </MultiInput>
+                    </VBox>
+                    <VBox class="sapUiMediumMarginEnd">
+                        <Label text="기본 시작일" required="true"/>
+                        <DatePicker id="validityStartDate" displayFormat="yyyy-MM-dd" valueFormat="yyyy-MM-dd" value="{filterModel>/Hiredate}" width="15em"/>
+                    </VBox>
+                    <VBox>
+                        <Label text="로트 사이즈"/>
+                        <Input type="Text" width="15em"/>
+                    </VBox>
+                </HBox>
+                <HBox class="sapUiMediumMarginBottom">
+                    <VBox class="sapUiMediumMarginEnd">
+                        <Label text="생산 순위"/>
+                        <MultiInput
+                            width="15em"
+                            id="prodLvlVH"
+                            valueHelpRequest="onPageVH"
+                            suggestionItemSelected="onPageVHSelected"
+                            suggestionRows="{
+                            path: 'prodLvlModel>/'
+                            }"
+                            liveChange="onTokenUpdate"
+                        >
+                            <suggestionColumns>
+                                <Column>
+                                    <Label text="생산 순위"/>
+                                </Column>
+                            </suggestionColumns>
+                            <suggestionRows>
+                                <ColumnListItem>
+                                    <Label text="{prodLvlModel>Referencecodeid}"/>
+                                </ColumnListItem>
+                            </suggestionRows>
+                        </MultiInput>
+                    </VBox>
+                    <VBox>
+                        <Label text="생산 순위 내역"/>
+                        <Input id="prodLvlDescription" type="Text" width="15em" value="{prodLvlModel>Description}" editable="false"/>
+                    </VBox>
+                </HBox>
+                <HBox class="sapUiMediumMarginBottom">
+                    <VBox class="sapUiMediumMarginEnd">
+                        <Label text="우선 순위"/>
+                        <MultiInput
+                            width="15em"
+                            id="schedPriVH"
+                            valueHelpRequest="onPageVH"
+                            suggestionItemSelected="onPageVHSelected"
+                            suggestionRows="{
+                            path: 'schedPriModel>/'
+                            }"
+                            liveChange="onTokenUpdate"
+                        >
+                            <suggestionColumns>
+                                <Column>
+                                    <Label text="우선 순위"/>
+                                </Column>
+                            </suggestionColumns>
+                            <suggestionRows>
+                                <ColumnListItem>
+                                    <Label text="{schedPriModel>Referencecodeid}"/>
+                                </ColumnListItem>
+                            </suggestionRows>
+                        </MultiInput>
+                    </VBox>
+                    <VBox>
+                        <Label text="우선 순위 내역"/>
+                        <Input type="Text" width="15em" value="{schedPriModel>Description}" editable="false"/>
+                    </VBox>
+                </HBox>
+                <HBox>
+                    <VBox>
+                        <Label text="생산 주석"/>
+                        <Input type="Text" width="63em"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+        </f:content>
+         <f:footer>
+            <OverflowToolbar>
+                <ToolbarSpacer/>
+                <Button id="btnSave" type="Emphasized" text="저장" press="onSave"/>
+                <Button type="Ghost" text="취소" press="onCancel"/>
+            </OverflowToolbar>
+        </f:footer>
+    </f:DynamicPage>
+</mvc:View>

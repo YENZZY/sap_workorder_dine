@@ -1,0 +1,81 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+>
+    <ValueHelpDialog
+        title="오더 유형"
+        ok="onPageVHOk"
+        cancel="onPageVHCancel"
+        afterClose="onPageVHClose"
+        supportRanges="true"
+        key="ManufacturingOrderType"
+        supportMultiselect="false"
+        >
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onPageVHSearch"
+                isRunningInValueHelpDialog="true"
+            >
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="mfgOrderGroup"
+                        name="ManufacturingOrderType"
+                        label="오더 유형"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="ManufacturingOrderType"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'mfgOrderModel>/',
+                                    sorter: { path: 'ManufacturingOrderType' }
+                                }">
+                                <core:Item key="{mfgOrderModel>ManufacturingOrderType}" text="{mfgOrderModel>ManufacturingOrderType}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="mfgOrderGroup"
+                        name="ManufacturingOrderTypeName"
+                        label="오더 유형명"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="ManufacturingOrderTypeName"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'mfgOrderModel>/',
+                                    sorter: { path: 'ManufacturingOrderTypeName' }
+                                }">
+                                <core:Item key="{mfgOrderModel>ManufacturingOrderTypeName}" text="{mfgOrderModel>ManufacturingOrderTypeName}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="mfgOrderGroup"
+                        name="Language"
+                        label="언어"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Language"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'mfgOrderModel>/',
+                                    sorter: { path: 'Language' }
+                                }">
+                                <core:Item key="{mfgOrderModel>Language}" text="{mfgOrderModel>Language}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>

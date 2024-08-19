@@ -1,0 +1,295 @@
+<mvc:View controllerName="dinewkorder.controller.Main"
+    displayBlock="true"
+    height="100%"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.ui.table"
+    xmlns:m="sap.m"
+    xmlns:f="sap.f"
+    xmlns:u="sap.ui.unified"
+    xmlns:columnmenu="sap.m.table.columnmenu"
+    xmlns:sap.ui.fl="sap.ui.fl"
+    xmlns:sap.ui.dt="sap.ui.dt"
+    xmlns:svm="sap.ui.comp.smartvariants"
+    xmlns:vm="sap.ui.fl.variants"
+>
+    <!-- <Page id="page" title="{i18n>title}"> -->
+        <f:DynamicPage showFooter="true">
+            <f:title>
+                <f:DynamicPageTitle>
+                    <f:heading>
+                      <!-- <svm:SmartVariantManagement id="standardSVM" showExecuteOnSelection="true" /> -->
+                    </f:heading>
+                </f:DynamicPageTitle>
+            </f:title>
+            <f:header>
+                <f:DynamicPageHeader>
+                    <f:content>
+                    </f:content>
+                </f:DynamicPageHeader>
+            </f:header>
+            <f:content>
+                <Table 
+                    id="dataTable"
+                    sort="onSort"
+                    columnResize="onColumnResize"
+                    columnMove="onColumnMove"
+                    rowMode="Auto"
+                    ariaLabelledBy="title"
+                    rows="{dataModel>/}"
+                    selectionMode="MultiToggle"
+                >
+                    <extension>
+                        <m:OverflowToolbar>
+                            <m:Title id="title" text="작업지시"/>
+                            <m:ToolbarSeparator/>
+                            <vm:VariantManagement id="p13nVm" for="dataTable"/>
+                            <m:ToolbarSpacer/>
+                            <m:Button id="pageSO" text="단일 생성(수주)" press="onPageSO"/>
+                            <m:Button id="pageMP" text="단일 생성(양산)" press="onPageMP"/>
+                            <u:FileUploader 
+                                id="upload"
+                                sameFilenameAllowed="true"
+                                iconOnly="false"
+                                buttonOnly="true"
+                                buttonText="대량 업로드"
+                                fileType="XLSX,xlsx"
+                                change="onUpload"
+                            />
+                            <m:Button icon="sap-icon://action-settings" press="openPersoDialog"/>
+                        </m:OverflowToolbar>
+                    </extension>
+                    <dependents>
+                        <columnmenu:Menu id="menu">
+                            <columnmenu:items>
+                                <columnmenu:ActionItem icon="sap-icon://sort" label="Sort" press="onColumnHeaderItemPress"/>
+                                <columnmenu:ActionItem icon="sap-icon://table-column" label="Columns" press="onColumnHeaderItemPress"/>
+                            </columnmenu:items>
+                        </columnmenu:Menu>
+                    </dependents>
+                    <noData>
+                        <m:IllustratedMessage enableVerticalResponsiveness="true"/>
+                    </noData>
+                    <columns>
+                        <Column
+                            id="status_col"
+                            sortProperty="Status"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="상태" tooltip="상태"/>
+                            <template>
+                                <m:Text text="{dataModel>Status}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="mfgOrderType_col"
+                            sortProperty="MfgOrderType"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="생산 오더 유형" tooltip="생산 오더 유형"/>
+                            <template>
+                                <m:Text text="{dataModel>MfgOrderType}"/>
+                            </template>
+                        </Column>
+                        <Column 
+                            id="manufacturingOrder_col"
+                            sortProperty="ManufacturingOrder"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="생산 오더" />
+                            <template>
+                                <m:Text text="{dataModel>ManufacturingOrder}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="salesOrder_col"
+                            sortProperty="SalesOrder"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="판매 문서" />
+                            <template>
+                                <m:Text text="{dataModel>SalesOrder}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="manufacturingOrderType_col"
+                            sortProperty="ManufacturingOrderType"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="오더 유형" />
+                            <template>
+                                <m:Text text="{dataModel>ManufacturingOrderType}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="manufacturingOrderTypeName_col"
+                            sortProperty="ManufacturingOrderTypeName"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="오더 유형 내역" tooltip="오더 유형 내역"/>
+                            <template>
+                                <m:Text text="{dataModel>ManufacturingOrderTypeName}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="material_col"
+                            sortProperty="Material"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="제품" />
+                            <template>
+                                <m:Text text="{dataModel>Material}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="productDescription_col"
+                            sortProperty="ProductDescription"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="제품 내역" />
+                            <template>
+                                <m:Text text="{dataModel>ProductDescription}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="mfgOrderPlannedStartDate_col"
+                            sortProperty="MfgOrderPlannedStartDate"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="기본 시작일" />
+                            <template>
+                                <m:Text text="{
+                                    path: 'dataModel>MfgOrderPlannedStartDate',
+                                    type: 'sap.ui.model.type.Date', 
+                                    formatOptions: { 
+                                        pattern: 'yyyy-MM-dd' 
+                                        }
+                                    }" 
+                                />                            
+                            </template>
+                        </Column>
+                        <Column
+                            id="mfgOrderPlannedTotalQty_col"
+                            sortProperty="MfgOrderPlannedTotalQty"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="지시 수량" />
+                            <template>
+                                <m:Text text="{
+                                    path: 'dataModel>MfgOrderPlannedTotalQty',
+                                    type: 'sap.ui.model.type.Float',
+                                    formatOptions: { maximumFractionDigits: 0 , minimumFractionDigits: 0}
+                                    }"
+                                />
+                            </template>
+                        </Column>
+                        <Column
+                            id="baseUnit_col"
+                            sortProperty="BaseUnit"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="단위" />
+                            <template>
+                                <m:Text text="{dataModel>BaseUnit}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="productionVersion_col"
+                            sortProperty="ProductionVersion"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="생산 버전" />
+                            <template>
+                                <m:Text text="{dataModel>ProductionVersion}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="yy1ProdRankOrd_col"
+                            sortProperty="Yy1ProdRankOrd"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="생산 순위" />
+                            <template>
+                                <m:Text text="{dataModel>Yy1ProdRankOrd}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="yy1PrioRankOrd_col"
+                            sortProperty="Yy1PrioRankOrd"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="우선 순위" />
+                            <template>
+                                <m:Text text="{dataModel>Yy1PrioRankOrd}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="yy1ProdText_col"
+                            sortProperty="Yy1ProdText"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="생산 주석" />
+                            <template>
+                                <m:Text text="{dataModel>Yy1ProdText}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="message_col"
+                            sortProperty="Message"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <m:Label text="메시지" />
+                            <template>
+                                <m:Text text="{dataModel>Message}"/>
+                            </template>
+                        </Column>
+                        <Column
+                            id="action_col"
+                            headerMenu="menu"
+                            resizable="true"
+                            autoResizable="true"
+                        >
+                            <template>
+                                <m:Button 
+                                icon="sap-icon://navigation-right-arrow"
+                                press="onMove"
+                                />
+                            </template>
+                        </Column>
+                    </columns>
+                </Table>
+            </f:content>
+        </f:DynamicPage>
+    <!-- </Page> -->
+</mvc:View>

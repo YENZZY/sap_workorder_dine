@@ -1,0 +1,63 @@
+<core:FragmentDefinition
+    xmlns="sap.ui.comp.valuehelpdialog"
+    xmlns:m="sap.m"
+    xmlns:fb="sap.ui.comp.filterbar"
+    xmlns:core="sap.ui.core"
+>
+    <ValueHelpDialog
+        title="플랜트"
+        ok="onPageVHOk"
+        cancel="onPageVHCancel"
+        afterClose="onPageVHClose"
+        supportRanges="true"
+        key="Plant"
+        supportMultiselect="false"
+        >
+        <filterBar>
+            <fb:FilterBar
+                advancedMode="true"
+                search="onPageVHSearch"
+                isRunningInValueHelpDialog="true"
+            >
+                <fb:filterGroupItems>
+                    <fb:FilterGroupItem
+                        groupName="plantGroup"
+                        name="Plant"
+                        label="플랜트"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="Plant"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'plantModel>/',
+                                    sorter: { path: 'Plant' }
+                                }">
+                                <core:Item key="{plantModel>Plant}" text="{plantModel>Plant}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                    <fb:FilterGroupItem
+                        groupName="plantGroup"
+                        name="PlantName"
+                        label="플랜트명"
+                        visibleInFilterBar="true">
+                        <fb:control>
+                            <m:Input
+                                name="PlantName"
+                                showSuggestion="true"
+                                showValueHelp="false"
+                                suggestionItems="{
+                                    path: 'plantModel>/',
+                                    sorter: { path: 'PlantName' }
+                                }">
+                                <core:Item key="{plantModel>PlantName}" text="{plantModel>PlantName}" />
+                            </m:Input>
+                        </fb:control>
+                    </fb:FilterGroupItem>
+                </fb:filterGroupItems>
+            </fb:FilterBar>
+        </filterBar>
+    </ValueHelpDialog>
+</core:FragmentDefinition>
