@@ -15,9 +15,10 @@ sap.ui.define([
     'sap/ui/model/Filter',
     'sap/ui/model/FilterOperator',
     'sap/m/DatePicker',
-    'sap/m/Select'
+    'sap/m/Select',
+    'sap/ui/model/Model'
 ],
-function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select) {
+function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select, Model) {
     "use strict";
 
     return Controller.extend("dinewkorder.controller.PageSO", {
@@ -34,7 +35,14 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         _getData: function () {
             this.modelData();
+
 		},
+
+        // createDineModel: function () {
+        //     var oModel = new ODataModel ('/sap/opu/odata/sap/ZSBPP_SALESORDERITEM');
+        //     console.log("oModel",oModel);
+        //     return oModel;
+        // },
 
         setModelData: function () {
             var inputIds = [
@@ -66,15 +74,21 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // model db
         modelData: function () {
-            var oMainModel = this.getOwnerComponent().getModel();
+            var oDineModel = this.getOwnerComponent().getModel("mainData");
+            var oMainModel = this.getOwnerComponent().getModel("dineData");
+
+            var rankModelData = function(url, modelName) {
+            this._getODataRead(oDineModel, url).then(function(dinedata){
+                this.setModel(new JSONModel(dinedata), modelName);
+                }.bind(this));
+            }.bind(this);
 
             // commonModelData 함수를 this와 바인딩하여 정의
             var commonModelData = function(url, modelName) {
                 this._getODataRead(oMainModel, url).then(function(commonData) {
                     var oModel = new JSONModel(commonData);
                     this.setModel(oModel, modelName);
-                    console.log("prolvl",this.getModel("prodLvlModel"));
-                    console.log("schedPriModel",this.getModel("schedPriModel"));
+
                     // 모델이 mfgOrderModel일 때
                     if (modelName === "mfgOrderModel") {
                         var oMfgOrderModel = this.getModel("mfgOrderModel");
@@ -101,9 +115,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             commonModelData("/MfgOrder", "mfgOrderModel"); 
             commonModelData("/Product", "productModel");
             commonModelData("/Plant", "plantModel");
-            commonModelData("/ProdLvl", "prodLvlModel");
-            commonModelData("/SchedPri", "schedPriModel");
             commonModelData("/ProdOrder", "dataModel");
+            rankModelData("/ProdLvl", "prodLvlModel");
+            rankModelData("/SchedPri", "schedPriModel");
+
+            
         },
 
         // MultiInput 초기화 및 설정
@@ -782,7 +798,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // 저장
         onSave: function () {
-            var oMainModel = this.getOwnerComponent().getModel();
+            var oMainModel = this.getOwnerComponent().getModel("mainData");
             var lotSize = this.byId("lotSize").getValue();
             var oData = {
                 Status: "2",

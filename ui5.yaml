@@ -17,9 +17,15 @@ server:
           url: https://ui5.sap.com
         backend:
           - authenticationType: reentranceTicket # SAML support for vscode
-            path: /sap
-            url: https://my414091-api.s4hana.cloud.sap
+          - path: /sap/opu/odata/sap/ZSBPP_SALESORDERITEM
+            url: https://my414076-api.s4hana.cloud.sap
             destination: DINE_STR_CUS_SAML_ASSERTION
+          - path: /sap/opu/odata/sap/ZSBPP_PRODORDER
+            url: https://my414091-api.s4hana.cloud.sap
+            destination: DINE_STR_DEV_SAML_ASSERTION
+          - path: /sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2
+            url: https://my414076-api.s4hana.cloud.sap
+            destination: DINE_STR_CUS_API_BASIC
     - name: fiori-tools-appreload
       afterMiddleware: compression
       configuration:

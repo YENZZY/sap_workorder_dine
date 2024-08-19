@@ -22,8 +22,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
         onInit: function () {
 			this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
 
-            //this._registerForP13n();
-			
+            this._registerForP13n();
+
+		
         },
 
 		_onRouteMatched: function () {
@@ -31,9 +32,16 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
         },
 
         _getData: function () {
-			var oMainModel = this.getOwnerComponent().getModel();
-            // commonModelData 함수를 this와 바인딩하여 정의
+			var oMainModel = this.getOwnerComponent().getModel("dineData"); //cus
+			var oDineModel = this.getOwnerComponent().getModel("mainData"); // dev
 
+			var rankModelData = function(url, modelName) {
+				this._getODataRead(oDineModel, url).then(function(dinedata){
+					this.setModel(new JSONModel(dinedata), modelName);
+					}.bind(this));
+				}.bind(this);
+			
+            // commonModelData 함수를 this와 바인딩하여 정의
             var commonModelData = function(url, modelName) {
 				 // 함수 호출 시 this가 올바르게 참조되도록 수정
                 this._getODataRead(oMainModel, url).then(function(commonData) {
@@ -90,9 +98,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			commonModelData("/Product", "productModel");
 			commonModelData("/ProductionVersion", "prodVerModel");
 			commonModelData("/Plant", "plantModel");
-            commonModelData("/ProdLvl", "prodLvlModel");
-            commonModelData("/SchedPri", "schedPriModel");
-			commonModelData("/ProdOrder", "dataModel");
+            rankModelData("/ProdLvl", "prodLvlModel");
+            rankModelData("/SchedPri", "schedPriModel");
+			rankModelData("/ProdOrder", "dataModel");
 		},
 		
 		// 단일 생성(수주) 페이지 이동
@@ -132,12 +140,44 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					var data = e.target.result;
 					var workbook = XLSX.read(data, { type: 'binary' });
 					var saveProdOrder = [];
-		
+
+					// 엑셀 날짜를 JavaScript Date로 변환하는 함수
+					function excelDateToJSDate(excelDate) {
+						// 엑셀 날짜 시스템 기준 날짜 (1900년 1월 1일)
+						var excelBaseDate = new Date(Date.UTC(1900, 0, 0));
+						// 엑셀 날짜는 1일이 1로 표시됨 (86400000 ms = 1일)
+						var jsDate = new Date(excelBaseDate.getTime() + (excelDate - 1) * 86400000);
+						console.log(jsDate);
+						return jsDate;
+					}
+
+					// JavaScript Date를 YYYY-MM-DD 형식의 문자열로 변환하는 함수
+					// function formatJSDate(jsDate) {
+					// 	var year = jsDate.getFullYear();
+					// 	var month = ('0' + (jsDate.getMonth() + 1)).slice(-2); // 월은 0부터 시작하므로 +1
+					// 	var day = ('0' + jsDate.getDate()).slice(-2);
+
+					// 	return `${year}-${month}-${day}`;
+					// }
+
+					// JavaScript Date를 YYYYMMDD 형식의 문자열로 변환하는 함수
+					// function formatDateToDATS(jsDate) {
+					// 	var year = jsDate.getFullYear();
+					// 	var month = ('0' + (jsDate.getMonth() + 1)).slice(-2);
+					// 	var day = ('0' + jsDate.getDate()).slice(-2);
+
+					// 	return `${year}${month}${day}`;
+					// }
+					
 					workbook.SheetNames.forEach(function (sheetName) {
 						var excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
 						console.log("Excel Data:", excelData);
 		
 						var filteredData = excelData.map(function (row) {
+							var date = row["기본 시작일"] || row["MfgOrderPlannedStartDate"];
+							var dates = excelDateToJSDate(parseFloat(date));
+							console.log("row", row);
+							console.log("기본 시작일 값:", dates);
 							return {
 								ProductionPlant: row["플랜트"] || row["ProductionPlant"],
 								SalesOrder: row["판매문서"] || row["SalesOrder"],
@@ -146,7 +186,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 								ManufacturingOrderType: row["오더유형"] || row["ManufacturingOrderType"],
 								ProductionVersion: row["생산버전"] || row["ProductionVersion"],
 								TotalQuantity: row["작업지시 수량"] || row["TotalQuantity"],
-								MfgOrderPlannedStartDate: row["기본시작일"] || row["MfgOrderPlannedStartDate"],
+								MfgOrderPlannedStartDate: dates,
 								LotSize: row["로트 사이즈"] || row["LotSize"],
 								YY1_PROD_RANK_ORD: row["생산순위"] || row["YY1_PROD_RANK_ORD"],
 								YY1_PRIO_RANK_ORD: row["우선순위"] || row["YY1_PRIO_RANK_ORD"],
@@ -157,61 +197,70 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						saveProdOrder = saveProdOrder.concat(filteredData.flatMap(function (saveData) {
 							var orders = [];
 							var lotSize = saveData.LotSize ? parseFloat(saveData.LotSize) : 0;
+							console.log("ls",saveData.LotSize);
 							var totalQuantity = parseFloat(saveData.TotalQuantity);
-		
+							console.log("total",totalQuantity);
+							 // 값을 문자열로 변환하는 함수
+							 function convertValuesToString(obj) {
+								return Object.fromEntries(
+									Object.entries(obj).map(([key, value]) => [key, value && key !== 'MfgOrderPlannedStartDate' ? value.toString() : value])
+								);
+							}
+
 							if (lotSize > 0 && totalQuantity > lotSize) {
 								// 로트 사이즈를 사용하여 여러 개의 작업 지시 생성
 								for (var i = 0; i < Math.floor(totalQuantity / lotSize); i++) {
-									orders.push({
-										MfgOrderType: (saveData.SalesOrder === "" || saveData.SalesOrderItem === "" ? "2" : "1"),
-										ProductionPlant: saveData.ProductionPlant.toString(),
-										SalesOrder: saveData.SalesOrder.toString(),
-										SalesOrderItem: saveData.SalesOrderItem.toString(),
-										Material: saveData.Material.toString(),
-										ManufacturingOrderType: saveData.ManufacturingOrderType.toString(),
-										ProductionVersion: saveData.ProductionVersion.toString(),
-										MfgOrderPlannedTotalQty: lotSize.toString(),
-										// MfgOrderPlannedStartDate: saveData.MfgOrderPlannedStartDate,
-										Yy1ProdRankOrd: saveData.YY1_PROD_RANK_ORD.toString(),
-										Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD.toString(),
-										Yy1ProdText: saveData.YY1_PROD_TEXT_ORD.toString()
-									});
+									orders.push(convertValuesToString({
+										MfgOrderType: (!saveData.SalesOrder || !saveData.SalesOrderItem ? "2" : "1"),
+										ProductionPlant: saveData.ProductionPlant,
+										SalesOrder: saveData.SalesOrder,
+										SalesOrderItem: saveData.SalesOrderItem,
+										Material: saveData.Material,
+										ManufacturingOrderType: saveData.ManufacturingOrderType,
+										ProductionVersion: saveData.ProductionVersion,
+										MfgOrderPlannedTotalQty: lotSize,
+										MfgOrderPlannedStartDate: saveData.MfgOrderPlannedStartDate, // 날짜 변환
+										Yy1ProdRankOrd: saveData.YY1_PROD_RANK_ORD,
+										Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD,
+										Yy1ProdText: saveData.YY1_PROD_TEXT_ORD
+									}));
 								}
 		
 								// 나머지 수량을 처리하기 위한 주문 추가
 								var remainder = totalQuantity % lotSize;
+								console.log("remainder",remainder);
 								if (remainder > 0) {
-									orders.push({
-										MfgOrderType: (saveData.SalesOrder === "" || saveData.SalesOrderItem === "" ? "2" : "1"),
-										ProductionPlant: saveData.ProductionPlant.toString(),
-										SalesOrder: saveData.SalesOrder.toString(),
-										SalesOrderItem: saveData.SalesOrderItem.toString(),
-										Material: saveData.Material.toString(),
-										ManufacturingOrderType: saveData.ManufacturingOrderType.toString(),
-										ProductionVersion: saveData.ProductionVersion.toString(),
-										MfgOrderPlannedTotalQty: remainder.toString(),
-										// MfgOrderPlannedStartDate: saveData.MfgOrderPlannedStartDate,
-										Yy1ProdRankOrd: saveData.YY1_PROD_RANK_ORD.toString(),
-										Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD.toString(),
-										Yy1ProdText: saveData.YY1_PROD_TEXT_ORD.toString()
-									});
+									orders.push(convertValuesToString({
+										MfgOrderType: (!saveData.SalesOrder || !saveData.SalesOrderItem ? "2" : "1"),
+										ProductionPlant: saveData.ProductionPlant,
+										SalesOrder: saveData.SalesOrder,
+										SalesOrderItem: saveData.SalesOrderItem,
+										Material: saveData.Material,
+										ManufacturingOrderType: saveData.ManufacturingOrderType,
+										ProductionVersion: saveData.ProductionVersion,
+										MfgOrderPlannedTotalQty: remainder,
+										MfgOrderPlannedStartDate: saveData.MfgOrderPlannedStartDate,
+										Yy1ProdRankOrd: saveData.YY1_PROD_RANK_ORD,
+										Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD,
+										Yy1ProdText: saveData.YY1_PROD_TEXT_ORD
+									}));
 								}
 							} else {
 								// 로트 사이즈가 없거나 전체 수량이 로트 사이즈보다 작을 때
-								orders.push({
-									MfgOrderType: (saveData.SalesOrder === "" || saveData.SalesOrderItem === "" ? "2" : "1"),
-									ProductionPlant: saveData.ProductionPlant.toString(),
-									SalesOrder: saveData.SalesOrder.toString(),
-									SalesOrderItem: saveData.SalesOrderItem.toString(),
-									Material: saveData.Material.toString(),
-									ManufacturingOrderType: saveData.ManufacturingOrderType.toString(),
-									ProductionVersion: saveData.ProductionVersion.toString(),
-									MfgOrderPlannedTotalQty: totalQuantity.toString(),
-									// MfgOrderPlannedStartDate: saveData.MfgOrderPlannedStartDate,
-									Yy1ProdRankOrd: saveData.YY1_PROD_RANK_ORD.toString(),
-									Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD.toString(),
-									Yy1ProdText: saveData.YY1_PROD_TEXT_ORD.toString()
-								});
+								orders.push(convertValuesToString({
+									MfgOrderType: (!saveData.SalesOrder || !saveData.SalesOrderItem ? "2" : "1"),
+									ProductionPlant: saveData.ProductionPlant,
+									SalesOrder: saveData.SalesOrder,
+									SalesOrderItem: saveData.SalesOrderItem,
+									Material: saveData.Material,
+									ManufacturingOrderType: saveData.ManufacturingOrderType,
+									ProductionVersion: saveData.ProductionVersion,
+									MfgOrderPlannedTotalQty: totalQuantity,
+									MfgOrderPlannedStartDate: saveData.MfgOrderPlannedStartDate,
+									Yy1ProdRankOrd: saveData.YY1_PROD_RANK_ORD,
+									Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD,
+									Yy1ProdText: saveData.YY1_PROD_TEXT_ORD
+								}));
 							}
 		
 							return orders;
@@ -221,13 +270,19 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					console.log("SaveProdOrder:", saveProdOrder);
 		
 					// 데이터 저장 요청
-					this._getODataCreate(oMainModel, "/ProdOrder", saveProdOrder).done(function () {
-						MessageBox.success("성공");
-					}).fail(function (error) {
-						MessageBox.error("서버에 데이터를 저장하는 도중 오류가 발생했습니다: " + (error.message || "알 수 없는 오류"));
-					});
-				}.bind(this);
+					var requests = saveProdOrder.map(function (odata) {
+						return this._getODataCreate(oMainModel, "/ProdOrder", odata);
+					}.bind(this));
 		
+						Promise.all(requests)
+						.then(function () {
+							MessageBox.success("엑셀 파일이 업로드 되었습니다.");
+						})
+						.catch(function (error) {
+							MessageBox.error("서버에 데이터를 저장하는 도중 오류가 발생했습니다: " + (error.message || "알 수 없는 오류"));
+						});
+						this._getData();
+				}.bind(this);
 				// 파일 읽기 오류 시
 				reader.onerror = function (e) {
 					MessageBox.error("파일을 읽는 도중 오류가 발생했습니다.");
@@ -404,7 +459,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		},
 
 		onColumnMove: function(oEvt) {
-			debugger;
 			const oTable = this.byId("dataTable");
 			const oAffectedColumn = oEvt.getParameter("column");
 			const iNewPos = oEvt.getParameter("newPos");

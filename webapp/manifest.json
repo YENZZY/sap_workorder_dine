@@ -17,7 +17,16 @@
     },
     "dataSources": {
       "mainService": {
-        "uri": "/sap/opu/odata/sap/ZSBPP_SALESORDERITEM/",
+        "uri": "/sap/opu/odata/sap/ZSBPP_PRODORDER",
+        "type": "OData",
+        "settings": {
+          "annotations": [],
+          "localUri": "localService/metadata.xml",
+          "odataVersion": "2.0"
+        }
+      },
+      "mainService2": {
+        "uri": "/sap/opu/odata/sap/ZSBPP_SALESORDERITEM",
         "type": "OData",
         "settings": {
           "annotations": [],
@@ -70,8 +79,13 @@
           "bundleName": "dinewkorder.i18n.i18n"
         }
       },
-      "": {
+      "mainData": {
         "dataSource": "mainService",
+        "preload": true,
+        "settings": {}
+      },
+      "dineData": {
+        "dataSource": "mainService2",
         "preload": true,
         "settings": {}
       }

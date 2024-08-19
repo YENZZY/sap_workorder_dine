@@ -19,7 +19,7 @@ server:
           - authenticationType: reentranceTicket # SAML support for vscode
             path: /sap
             url: https://my414091-api.s4hana.cloud.sap
-            destination: DINE_STR_CUS_SAML_ASSERTION
+            destination: DINE_STR_DEV_SAML_ASSERTION
     - name: fiori-tools-appreload
       afterMiddleware: compression
       configuration:
