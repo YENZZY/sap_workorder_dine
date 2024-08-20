@@ -31,79 +31,87 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
             this._getData();
         },
 
-        _getData: function () {
-			var oMainModel = this.getOwnerComponent().getModel("dineData"); //cus
-			var oDineModel = this.getOwnerComponent().getModel("mainData"); // dev
-			
-            // commonModelData 함수를 this와 바인딩하여 정의
-            var commonModelData = function(url, modelName) {
-				 // 함수 호출 시 this가 올바르게 참조되도록 수정
-                this._getODataRead(oMainModel, url).then(function(commonData) {
-                    var oModel = new JSONModel(commonData);
-                    this.setModel(oModel, modelName);
-                }.bind(this));
-            }.bind(this); // commonModelData 함수 자체에 this를 바인딩
-			
-			var rankModelData = function(url, modelName) {
-				this._getODataRead(oDineModel, url).then(function(dinedata){
-					this.setModel(new JSONModel(dinedata), modelName);
-
-					if (modelName === "dataModel") {
-						var dataModel = this.getModel("dataModel").getData();
-						var mfgOrderModel = this.getModel("mfgOrderModel").getData();
-						var soModel = this.getModel("soModel").getData();
-						var productModel = this.getModel("productModel").getData();
+		_getData: function () {
+			var oMainModel = this.getOwnerComponent().getModel("dineData"); // cus
+			var oDineModel = this.getOwnerComponent().getModel("mainData"); //dev
 		
-						// 데이터 모델의 ManufacturingOrderType과 일치하는 mfgOrderModel의 항목을 찾기 
-						// dataModel에 ManufacturingOrderTypeName을 추가
-						dataModel.forEach(function(dataItem) {
-							// 오더 유형 내역
-							var matchingOrder = mfgOrderModel.find(function(mfgOrderItem) {
-								return mfgOrderItem.ManufacturingOrderType === dataItem.ManufacturingOrderType;
-							});
-							
-							if (matchingOrder) {
-								dataItem.ManufacturingOrderTypeName = matchingOrder.ManufacturingOrderTypeName;
-							}
+			// fetchModel 함수를 수정하여 Promise를 반환하도록 변경
+			var fetchModel = function(url, modelName, isDineModel) {
+				var model = isDineModel ? oDineModel : oMainModel;
+				return this._getODataRead(model, url).then(function(data) {
+					var oModel = new JSONModel(data);
+					this.setModel(oModel, modelName);
+					console.log("모델 설정됨:", modelName, this.getModel(modelName));
+				}.bind(this)).catch(function(error) {
+					console.error("데이터를 가져오는 데 실패했습니다:", url, error);
+				});
+			}.bind(this);
 		
-							// 제품
-							var matchingMaterial = soModel.find(function(soItem) {
-								return soItem.SalesOrder === dataItem.SalesOrder && soItem.SalesOrderItem === dataItem.SalesOrderItem;
-							});
+			// fetchModel 호출의 결과로 Promise 배열 생성
+			var fetchPromises = [
+				fetchModel("/MfgOrder", "mfgOrderModel"),
+				fetchModel("/SalesOrder", "soModel"),
+				fetchModel("/Product", "productModel"),
+				fetchModel("/ProductionVersion", "prodVerModel"),
+				fetchModel("/Plant", "plantModel"),
+				fetchModel("/ProdLvl", "prodLvlModel", true),
+				fetchModel("/SchedPri", "schedPriModel", true),
+				fetchModel("/ProdOrder", "dataModel", true)
+			];
 		
-							if(matchingMaterial) {
-								dataItem.Material = matchingMaterial.Material;
-							}
+			// 모든 fetch 작업이 완료될 때까지 기다림
+			Promise.all(fetchPromises).then(function() {
+				// 모든 모델이 이제 가져오고 설정됨
+				var dataModel = this.getModel("dataModel");
+				var mfgOrderModel = this.getModel("mfgOrderModel");
+				var soModel = this.getModel("soModel");
+				var productModel = this.getModel("productModel");
 		
-							//제품 내역 및 단위
-							var matchingProduct = productModel.find(function(prodItem){
-								return prodItem.Product === dataItem.Material;
-							});
-							console.log("mtp", matchingProduct);
-							if(matchingProduct) {
-								dataItem.ProductDescription = matchingProduct.ProductDescription;
-								dataItem.BaseUnit = matchingProduct.BaseUnit;
-							}
+				if (dataModel && mfgOrderModel && soModel && productModel) {
+					var data = dataModel.getData();
+					var mfgOrders = mfgOrderModel.getData();
+					var salesOrders = soModel.getData();
+					var products = productModel.getData();
+		
+					// 다른 모델을 기반으로 dataModel 업데이트
+					data.forEach(function(dataItem) {
+						// ManufacturingOrderType과 일치하는 항목 찾기
+						var matchingOrder = mfgOrders.find(function(order) {
+							return order.ManufacturingOrderType === dataItem.ManufacturingOrderType;
 						});
 		
-						// 변경된 dataModel을 모델에 다시 설정
-						var updatedModel = new JSONModel(dataModel);
-						this.setModel(updatedModel, "dataModel");
-					}
-					}.bind(this));
-				}.bind(this);
-
-			commonModelData("/MfgOrder", "mfgOrderModel");
-			commonModelData("/SalesOrder", "soModel");
-			commonModelData("/Product", "productModel");
-			commonModelData("/ProductionVersion", "prodVerModel");
-			commonModelData("/Plant", "plantModel");
-			rankModelData("/ProdLvl", "prodLvlModel");
-            rankModelData("/SchedPri", "schedPriModel");
-			rankModelData("/ProdOrder", "dataModel");
-
-           
-		},
+						if (matchingOrder) {
+							dataItem.ManufacturingOrderTypeName = matchingOrder.ManufacturingOrderTypeName;
+						}
+		
+						// SalesOrder와 SalesOrderItem이 일치하는 항목 찾기
+						var matchingMaterial = salesOrders.find(function(salesOrder) {
+							return salesOrder.SalesOrder === dataItem.SalesOrder && salesOrder.SalesOrderItem === dataItem.SalesOrderItem;
+						});
+		
+						if (matchingMaterial) {
+							dataItem.Material = matchingMaterial.Material;
+						}
+		
+						// Material과 일치하는 Product 항목 찾기
+						var matchingProduct = products.find(function(product) {
+							return product.Product === dataItem.Material;
+						});
+		
+						if (matchingProduct) {
+							dataItem.ProductDescription = matchingProduct.ProductDescription;
+							dataItem.BaseUnit = matchingProduct.BaseUnit;
+						}
+					});
+		
+					// 업데이트된 dataModel 설정
+					var updatedModel = new JSONModel(data);
+					this.setModel(updatedModel, "dataModel");
+				}
+			}.bind(this)).catch(function(error) {
+				console.error("모델 처리 중 오류 발생:", error);
+			});
+		},		
 		
 		// 단일 생성(수주) 페이지 이동
 		onPageSO: function () {
