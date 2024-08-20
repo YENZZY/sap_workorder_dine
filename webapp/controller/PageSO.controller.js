@@ -15,10 +15,9 @@ sap.ui.define([
     'sap/ui/model/Filter',
     'sap/ui/model/FilterOperator',
     'sap/m/DatePicker',
-    'sap/m/Select',
-    'sap/ui/model/odata/v2/ODataModel'
+    'sap/m/Select'
 ],
-function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select, ODataModel) {
+function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select) {
     "use strict";
 
     return Controller.extend("dinewkorder.controller.PageSO", {
@@ -27,8 +26,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             this.initializeValueHelpInputs();
 
-            //작업지시 생성 라우팅 모델 설정
-            this.setModel(this.createProductionRoutingModel(), "WorkOrderAPI");
         },
 
 		_onRouteMatched: function () {
@@ -39,12 +36,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             this.modelData();
 
 		},
-
-        createProductionRoutingModel: function () {
-            var oModel = new ODataModel('/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2');
-            console.log("oModel",oModel);
-            return oModel;
-        },
 
         setModelData: function () {
             var inputIds = [
@@ -88,33 +79,38 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             // commonModelData 함수를 this와 바인딩하여 정의
             var commonModelData = function(url, modelName) {
                 this._getODataRead(oMainModel, url).then(function(commonData) {
+                    var oModel = new JSONModel(commonData);
+                    this.setModel(oModel, modelName);
+                    
                     if (modelName === "mfgOrderModel") { // 오더유형
-                        var filteredData = Array.isArray(commonData) ? 
-                        commonData.filter(function(item) {
-                            return item.ManufacturingOrderType === "DN01"; // 수주
+                        
+                        var oMfgOrderModel = this.getModel("mfgOrderModel"); // mfgOrderModel 참조
+                        var oMfgData = oMfgOrderModel.getData(); // 모델 데이터 가져오기
+                        
+                        // ManufacturingOrderType이 "DN01"인 항목만 필터링
+                        var filteredData = Array.isArray(oMfgData) ? oMfgData.filter(function(item) {
+                            return item.ManufacturingOrderType === "DN01"; // 필터링 조건
                         }) : [];
-                    
-                        // 필터링된 데이터로 JSON 모델 생성
-                        var oModel = new JSONModel(filteredData);
-                        this.setModel(oModel, modelName);
-
-                        var oMfgOrderModel = this.getModel("mfgOrderModel");
-                        var aData = oMfgOrderModel.getProperty("/");
+                        
+                        // 필터링된 데이터로 모델 업데이트
+                        this.setModel(new JSONModel(filteredData), "mfgOrderModel");
+                        
+                        // 필터링된 데이터의 첫 번째 항목에서 ManufacturingOrderTypeName 가져오기
+                        var aData = filteredData; // 필터링된 데이터 사용
                         if (aData.length > 0) {
-                            var sSelectedKey = aData[0].ManufacturingOrderType;
+                            var sSelectedKey = aData[0].ManufacturingOrderType; // 첫 번째 항목의 ManufacturingOrderType
                             console.log("Selected Key", sSelectedKey);
-                    
+                        
+                            // 첫 번째 항목의 ManufacturingOrderTypeName 가져오기
                             var sManufacturingOrderTypeName = aData.find(function(item) {
                                 return item.ManufacturingOrderType === sSelectedKey;
                             })?.ManufacturingOrderTypeName || "";
-
+                        
+                            // 특정 입력 필드에 값 설정
                             var oInput = this.byId("mfgOrderTypeName"); 
                             oInput.setValue(sManufacturingOrderTypeName);
-                    } else {
-                        var oModel = new JSONModel(commonData);
-                        this.setModel(oModel, modelName);
                         }
-                    }                    
+                }              
                 }.bind(this));
             }.bind(this); // commonModelData 함수 자체에 this를 바인딩
         
@@ -124,10 +120,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             commonModelData("/MfgOrder", "mfgOrderModel"); 
             commonModelData("/Product", "productModel");
             commonModelData("/Plant", "plantModel");
-            commonModelData("/ProdOrder", "dataModel");
+            rankModelData("/ProdOrder", "dataModel");
             rankModelData("/ProdLvl", "prodLvlModel");
             rankModelData("/SchedPri", "schedPriModel");
-
             
         },
 
@@ -411,6 +406,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     var oMultiInput = this.byId("salesOrderItemVH");
 
                     if(oMultiInput){
+                        console.log("om",oMultiInput);
+                        console.log("dd",this.selectedSalesOrder);
                         oMultiInput.getBinding("suggestionRows").filter(new Filter("SalesOrder", FilterOperator.EQ, this.selectedSalesOrder));
                     }
                     oDialogSuggestions.update();
@@ -808,153 +805,356 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // 저장
         onSave: function () {
-            var oMainModel = this.getOwnerComponent().getModel("mainData");
+
+            // 로트 사이즈 값 가져오기
             var lotSize = this.byId("lotSize").getValue();
-            var oData = {
-                SalesOrder: this.byId("salesOrderVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 판매 문서
-                SalesOrderItem: this.byId("salesOrderItemVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 판매 문서 내역
-                ManufacturingOrderType: this.byId("mfgOrderType").getSelectedKey(), // 오더 유형
-                Material: this.byId("materialVH").getValue(),
-                ProductionPlant: this.byId("plantVH").getValue(), // 플랜트
-                TotalQuantity: this.byId("mfgOrderPlannedTotalQty").getValue(), // 작업 수량
-                ProductionVersion: this.byId("prodVerVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 생산 버전
-                MfgOrderPlannedStartDate: this.byId("startDate").getDateValue(), // 기본 시작일
-                YY1_PROD_RANK_ORD: this.byId("prodLvlVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 생산 순위
-                YY1_PRIO_RANK_ORD: this.byId("schedPriVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 우선 순위
-                YY1_PROD_TEXT_ORD: this.byId("prodAnnotaion").getValue() // 생산 주석 (Input 컨트롤)
-            };
-        
-            console.log("odata", oData);
-        
-            // 데이터 유효성 검사 (예시: 필수 입력값 체크)
-            if (!oData.SalesOrder || !oData.SalesOrderItem || !oData.ProductionVersion || !oData.ManufacturingOrderType || !oData.TotalQuantity || !oData.MfgOrderPlannedStartDate) {
-                MessageBox.error("필수 값을 입력해주세요.");
+            
+            // 입력 값을 가져오는 함수
+            var getInputValue = function(id, defaultValue) {
+                // 특정 ID의 토큰 값을 가져와 첫 번째 토큰의 키 값을 반환하거나 기본값을 반환
+                return this.byId(id).getTokens().map(function(token) { return token.getKey(); })[0] || defaultValue;
+            }.bind(this);
+            
+            // 텍스트 필드에서 값을 가져오는 함수
+            var getValue = function(id) {
+                return this.byId(id).getValue();
+            }.bind(this);
+            
+            // 날짜 필드에서 날짜 값을 가져오는 함수
+            var getDateValue = function(id) {
+                return this.byId(id).getDateValue();
+            }.bind(this);
+
+            // 입력 데이터 변수 선언
+            var sSalesOrder = getInputValue("salesOrderVH"); // 판매 문서
+            var sSalesOrderItem = getInputValue("salesOrderItemVH"); // 판매 문서 품목
+            var manufacturingOrderType = this.byId("mfgOrderType").getSelectedKey(); // 제조 오더 유형
+            var material = getValue("materialVH"); // 자재
+            var productionPlant = getValue("plantVH"); // 생산 플랜트
+            var totalQuantity = parseFloat(getValue("mfgOrderPlannedTotalQty")); // 총 작업 수량
+            var productionVersion = getInputValue("prodVerVH"); // 생산 버전
+            var mfgOrderPlannedStartDate = getDateValue("startDate"); // 작업 시작일
+            var prodRankOrd = getInputValue("prodLvlVH"); // 생산 순위
+            var prioRankOrd = getInputValue("schedPriVH"); // 우선 순위
+            var prodText = getValue("prodAnnotaion"); // 생산 주석
+            console.log("mfgOrderPlannedStartDate",mfgOrderPlannedStartDate);
+            // 필수 입력값 검증
+            if (!sSalesOrder || !sSalesOrderItem || !productionVersion || !manufacturingOrderType || isNaN(totalQuantity) || !mfgOrderPlannedStartDate) {
+                MessageBox.error("필수 값을 입력해주세요."); // 필수 값이 입력되지 않았을 때 오류 메시지 표시
                 return;
             }
 
-            var sSalesOrder = oData.SalesOrder;
-            var sSalesOrderItem = oData.SalesOrderItem;
-            var sMfgQty = parseFloat(oData.TotalQuantity);
-
-            //판매 문서 수량 가져오기
+            // 데이터 모델에서 판매 문서 수량 가져오기
             var oSoModel = this.getModel("soModel").getData();
-            oSoModel.forEach(function(sdata){
-                if(sdata.SalesOrder === sSalesOrder && sdata.SalesOrderItem === sSalesOrderItem){
-                        this.mfgQty = parseFloat(sdata.OrderQuantity);
+            var oDataModel = this.getModel("dataModel").getData();
+            
+            // 판매 문서에서 해당 품목의 총 수량을 구함
+            var mfgQty = oSoModel.reduce(function(acc, sdata) {
+                // 만약 현재 데이터의 판매 문서와 품목이 일치하면 수량을 반환
+                return (sdata.SalesOrder === sSalesOrder && sdata.SalesOrderItem === sSalesOrderItem) 
+                    ? parseFloat(sdata.OrderQuantity) : acc;
+            }, 0); // acc는 누적 값, 초기값은 0
+            
+            // 기존 작업 지시 수량을 구함
+            var mfgQtyData = oDataModel.reduce(function(acc, data) {
+                // 만약 현재 데이터의 판매 문서와 품목이 일치하면 기 생성된 수량을 누적
+                return (data.SalesOrder === sSalesOrder && data.SalesOrderItem === sSalesOrderItem) 
+                    ? acc + (data.MfgOrderPlannedTotalQty || 0) : acc;
+            }, 0); // acc는 누적 값, 초기값은 0
+
+            // 남은 작업 수량 계산
+            var remainingQty = mfgQty - mfgQtyData;
+
+            // 로트 사이즈 유효성 검증
+            if (parseFloat(lotSize) < 0 || parseFloat(lotSize) > totalQuantity) {
+                MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야 하며, 입력된 작업 지시 수량보다 커서는 안 됩니다.");
+                return;
+            }
+
+            // 작업 지시 수량이 남은 수량을 초과하는지 확인
+            if (totalQuantity > remainingQty) {
+                MessageBox.error("작업 지시 수량은 (판매 문서의 수량 - 기 생성된 생산 오더의 수량)보다 작아야 합니다.");
+                return;
+            }
+
+            // 작업 지시 수량 계산
+            var numOrders = Math.floor(totalQuantity / lotSize); // 로트 사이즈로 나누어진 작업 지시 수량
+            var remainderQty = totalQuantity % lotSize; // 나머지 수량
+
+            // 작업 지시 데이터 생성 함수
+            var createOrderData = function(qty) {
+                return {
+                    MfgOrderType:"1", // 수주
+                    SalesOrder: sSalesOrder,
+                    SalesOrderItem: sSalesOrderItem,
+                    ManufacturingOrderType: manufacturingOrderType,
+                    Material: material,
+                    ProductionPlant: productionPlant,
+                    MfgOrderPlannedTotalQty: qty,
+                    ProductionVersion: productionVersion,
+                    MfgOrderPlannedStartDate: mfgOrderPlannedStartDate,
+                    Yy1ProdRankOrd: prodRankOrd,
+                    Yy1PrioRankOrd: prioRankOrd,
+                    Yy1ProdText: prodText
+                };
+            };
+
+            // 작업 지시 데이터를 담을 배열
+            var oDataArray = [];
+            this.oDataArray = oDataArray;
+            for (var i = 0; i < numOrders; i++) {
+                this.oDataArray.push(createOrderData(lotSize)); // 로트 사이즈에 맞춰 작업 지시 데이터 추가
+            }
+            if (remainderQty > 0) {
+                this.oDataArray.push(createOrderData(remainderQty.toString())); // 나머지 수량에 대한 작업 지시 데이터 추가
+            }
+
+            // 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
+            function toDateFormat(dateString) {
+                let date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    throw new Error('Invalid date format');
                 }
+                // 날짜를 YYYY-MM-DD 형식으로 변환
+                let formattedDate = date.toISOString();
+                // T00:00:00을 붙여서 전체 포맷을 YYYY-MM-DDT00:00:00으로 설정
+                return `${formattedDate}T00:00:00`;
+            }
+
+            // 데이터 포맷 변환
+            var postArray = this.oDataArray.map(function(data) {
+                return {
+
+                    ManufacturingOrderType: data.ManufacturingOrderType || "",
+                    Material: data.Material || "",
+                    MfgOrderPlannedStartDate: toDateFormat(data.MfgOrderPlannedStartDate) || "",
+                    ProductionVersion: data.ProductionVersion || "",
+                    SalesOrder: data.SalesOrder || "",
+                    SalesOrderItem: data.SalesOrderItem || "",
+                    ProductionPlant: data.ProductionPlant || "",
+                    TotalQuantity: parseFloat(data.MfgOrderPlannedTotalQty || "0").toFixed(3),
+                    YY1_PROD_RANK_ORD: data.Yy1ProdRankOrd || "",
+                    YY1_PRIO_RANK_ORD: data.Yy1PrioRankOrd || "",
+                    YY1_PROD_TEXT_ORD: data.Yy1ProdText || ""
+
+                    // SalesOrder : "5",
+                    // SalesOrderItem : "0010",
+                    // Material : "FG228",
+                    // ProductionPlant : "4310",
+                    // ManufacturingOrderType : "DN01",
+                    // ProductionVersion : "0001",
+                    // TotalQuantity : "1",
+                    // MfgOrderPlannedStartDate : "2024-01-20T00:00:00",
+                    // YY1_PROD_RANK_ORD : "101",
+                    // YY1_PRIO_RANK_ORD : "000000000000000014",
+                    // YY1_PROD_TEXT_ORD : "납기준수"
+                };
+            });
+
+            console.log("postArray", postArray); // 디버깅을 위한 로그 출력
+
+             // POST 요청을 보내는 함수 호출
+            var promises = postArray.map(function(data) {
+                return this.postProductionOrder(data);
             }.bind(this));
 
-            // 기생성된 작업 지시 수량 가져오기
-            var oDataModel = this.getModel("dataModel").getData();
-                var mfgQtydata = 0; // 초기화
-                 
-            // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
-            oDataModel.forEach(function(data) {
-                    if (data.SalesOrder === sSalesOrder && data.SalesOrderItem === sSalesOrderItem) {
-                    mfgQtydata += data.MfgOrderPlannedTotalQty || 0;
+            // 모든 요청 완료 후 성공 또는 실패 처리
+            Promise.allSettled(promises).then(function(results) {
+                var oMainModel = this.getOwnerComponent().getModel("mainData");
+
+                // 성공 및 실패 결과를 처리
+                var updatedODataArray = results.map(function(result, index) {
+                    var baseData = postArray[index];
+                    console.log("baos",baseData);
+                    if (result.status === "fulfilled") {
+                        console.log("restat",result.status);
+                        // 성공한 경우
+                        var parser = new DOMParser();
+                        var xmlDoc = parser.parseFromString(result.value, "application/xml");
+                        var manufacturingOrderElement = xmlDoc.querySelector("ManufacturingOrder");
+                        var manufacturingOrder = manufacturingOrderElement ? manufacturingOrderElement.textContent : "";
+
+                        return {
+                            Status: "1", // 성공
+                            ManufacturingOrder: manufacturingOrder, // 생산 오더
+                            MfgOrderType:"1", // 수주
+                            SalesOrder: baseData.SalesOrder,
+                            SalesOrderItem: baseData.SalesOrderItem,
+                            ManufacturingOrderType: baseData.ManufacturingOrderType,
+                            Material: baseData.Material,
+                            ProductionPlant: baseData.ProductionPlant,
+                            MfgOrderPlannedTotalQty: (baseData.TotalQuantity).toString(),
+                            ProductionVersion: baseData.ProductionVersion,
+                            MfgOrderPlannedStartDate: mfgOrderPlannedStartDate,
+                            Yy1ProdRankOrd: baseData.YY1_PROD_RANK_ORD,
+                            Yy1PrioRankOrd: baseData.YY1_PRIO_RANK_ORD,
+                            Yy1ProdText: baseData.YY1_PROD_TEXT_ORD,
+                            Message:""
+                        };
+                    } else {
+                        // 실패한 경우
+                        return {
+                            Status: '2', // 에러
+                            MfgOrderType:"1", // 수주
+                            ManufacturingOrder: "",
+                            SalesOrder: baseData.SalesOrder,
+                            SalesOrderItem: baseData.SalesOrderItem,
+                            ManufacturingOrderType: baseData.ManufacturingOrderType,
+                            Material: baseData.Material,
+                            ProductionPlant: baseData.ProductionPlant,
+                            MfgOrderPlannedTotalQty: (baseData.TotalQuantity).toString(),
+                            ProductionVersion: baseData.ProductionVersion,
+                            MfgOrderPlannedStartDate: mfgOrderPlannedStartDate,
+                            Yy1ProdRankOrd: baseData.YY1_PROD_RANK_ORD,
+                            Yy1PrioRankOrd: baseData.YY1_PRIO_RANK_ORD,
+                            Yy1ProdText: baseData.YY1_PROD_TEXT_ORD,
+                            Message: "작업 지시 생성 중 오류가 발생했습니다."
+                        };
                     }
+                });
+
+                console.log("업데이트 값:", updatedODataArray);
+
+                // OData에 데이터 생성
+                var createPromises = updatedODataArray.map(function(data) {
+                    return new Promise(function(resolve, reject) {
+                        oMainModel.create("/ProdOrder", data, {
+                            success: function() {
+                                resolve();
+                            },
+                            error: function(oError) {
+                                reject(oError);
+                            }
+                        });
+                    });
+                });
+
+                // 모든 OData 생성 요청 완료 후 성공 또는 실패 처리
+                Promise.allSettled(createPromises).then(function(results) {
+                    var allSucceeded = results.every(function(result) {
+                        return result.status === "fulfilled";
+                    });
+
+                    if (allSucceeded) {
+                        MessageBox.success("작업 지시 생성이 완료되었습니다.");
+                        this.navTo("Main", {});
+                    } else {
+                        MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
+                    }
+                }.bind(this)).catch(function(err) {
+                    console.error("Error in creating production orders:", err);
+                    MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
+                }.bind(this));
+            }.bind(this)).catch(function(err) {
+                console.error("Error in processing production orders:", err);
+                MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
+            }.bind(this));
+        },
+        
+        // POST 요청을 보내는 함수
+        postProductionOrder: function(data) {
+            return this.getCSRFToken().then(function(csrfToken) {
+                console.log("token",csrfToken);
+                return $.ajax({
+                    url: "/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2",
+                    type: "POST",
+                    data: JSON.stringify(data),
+                    contentType: "application/json",
+                    headers: {
+                        "X-CSRF-Token": csrfToken
+                    },
+                    // success: this.handleSuccess.bind(this), // `this`를 바인딩하여 콜백 함수에 전달
+                    // error: this.handleError.bind(this) // `this`를 바인딩하여 콜백 함수에 전달
+                });
+            }.bind(this)) // CSRF 토큰 요청 내에서 `this`를 바인딩
+            .catch(function(err) {
+                // CSRF 토큰 요청 실패 시 처리
+                console.error("Error fetching CSRF Token:", err);
             });
-                
-            // mfgQtydata를 this.mfgQtydata로 저장하여 사용
-            this.mfgQtydata = parseFloat(mfgQtydata);
-            console.log("this",this.mfgQtydata);
+        },
 
-            if (lotSize && lotSize >= 0) {
-                // 작업지시 수량 계산
-                var mfgData = this.mfgQty - this.mfgQtydata; // 판매문서 수량 - 기 생성된 작업지시 수량 합계
-                
-                // 입력된 작업지시 수량이 판매문서 수량보다 많지 않은지 확인
-                if (lotSize <= sMfgQty) { 
-                        if(sMfgQty <= mfgData){ // 입력된 작업지시 수량 = (판매문서/품목의 수량 - 기생성된 생산오더 수량 합계)
-                            
-                            var numOrders = Math.floor(sMfgQty / lotSize); // 로트 사이즈로 나누어진 작업 지시 수량
-                            var remainderQty = sMfgQty % lotSize; // 나머지 수량
-                            console.log("reqty",remainderQty);
-                            var oDataArray = []; // 생성할 작업지시 데이터를 담을 배열
+        // 성공 시 처리 함수 (예: 화면 업데이트)
+        handleSuccess: function(response) {
+            // 메인 모델 가져오기
+            var oMainModel = this.getOwnerComponent().getModel("mainData");
+            console.log("Response:", response);
 
-                            // 로트 사이즈로 나누어진 작업지시 데이터 생성
-                            for (var i = 0; i < numOrders; i++) {
-                                oDataArray.push({
-                                    MfgOrderType: "1",
-                                    SalesOrder: sSalesOrder,
-                                    SalesOrderItem: sSalesOrderItem,
-                                    ManufacturingOrderType: oData.ManufacturingOrderType,
-                                    MfgOrderPlannedTotalQty: lotSize,
-                                    ProductionVersion: oData.ProductionVersion,
-                                    MfgOrderPlannedStartDate: oData.MfgOrderPlannedStartDate,
-                                    Yy1ProdRankOrd: oData.Yy1ProdRankOrd,
-                                    Yy1PrioRankOrd: oData.Yy1PrioRankOrd,
-                                    Yy1ProdText: oData.Yy1ProdText
-                                });
-                            }
+            // XML 응답에서 <d:ManufacturingOrder> 값 추출
+            var parser = new DOMParser();
+            var xmlDoc = parser.parseFromString(response, "application/xml");
 
-                            // 나머지 수량이 있는 경우 추가 작업지시 데이터 생성
-                            if (remainderQty > 0) {
-                                oDataArray.push({
-                                    MfgOrderType: "1",
-                                    SalesOrder: sSalesOrder,
-                                    SalesOrderItem: sSalesOrderItem,
-                                    ManufacturingOrderType: oData.ManufacturingOrderType,
-                                    MfgOrderPlannedTotalQty: remainderQty.toString(),
-                                    ProductionVersion: oData.ProductionVersion,
-                                    MfgOrderPlannedStartDate: oData.MfgOrderPlannedStartDate,
-                                    Yy1ProdRankOrd: oData.Yy1ProdRankOrd,
-                                    Yy1PrioRankOrd: oData.Yy1PrioRankOrd,
-                                    Yy1ProdText: oData.Yy1ProdText
-                                });
-                            }
+            var manufacturingOrderElement = xmlDoc.querySelector("d\\:ManufacturingOrder");
+            var manufacturingOrder = manufacturingOrderElement ? manufacturingOrderElement.textContent : null;
+            
+            var updatedOData = {
+            Status: '1', // 생성
+            ManufacturingOrder: manufacturingOrder, // 생산 오더
+            MfgOrderType:"1", // 수주
+            SalesOrder: sSalesOrder,
+            SalesOrderItem: sSalesOrderItem,
+            ManufacturingOrderType: manufacturingOrderType,
+            Material: material,
+            ProductionPlant: productionPlant,
+            MfgOrderPlannedTotalQty: qty,
+            ProductionVersion: productionVersion,
+            MfgOrderPlannedStartDate: mfgOrderPlannedStartDate,
+            Yy1ProdRankOrd: prodRankOrd,
+            Yy1PrioRankOrd: prioRankOrd,
+            Yy1ProdText: prodText
+            };
+        
+            console.log("업데이트 값:", updatedOData);
 
-                            console.log("oda",oDataArray);
+            this._getOdataCreate(oMainModel,"/ProdOrder",updatedOData).done(function(){
 
-                            var oWorkOrderAPI = this.getModel("WorkOrderAPI");
-                                var sEntitySet = "/A_ProductionOrder_2"; 
-                                var Status = "";
-                                var Message = "";
-                                oWorkOrderAPI.create(sEntitySet, oData, {
-                                    
-                                    success: function (oResponse) {
-                                        oDataArray.map(function (){
-                                            Status = "1";
-                                            Message = oResponse;
-                                         }.bind(this));
-                                    },
-                                    error: function (oError) {
-                                        // 요청 실패 후 처리
-                                        oDataArray.map(function (){
-                                          Status = "2";
-                                          Message = oError;
-                                        }.bind(this));
-                                    }
-                                });
-                            
-                            // OData 모델을 사용하여 데이터 저장
-                            var promises = oDataArray.map(function(data) {
-                                return this._getODataCreate(oMainModel, "/ProdOrder", data);
-                            }.bind(this));
+            }.bind(this));
 
-                            // 모든 데이터 저장 시 성공/실패 처리
-                            Promise.all(promises).then(function() {
-                                MessageBox.success("작업 지시 생성에 성공하였습니다.");
-                            }.bind(this)).catch(function() {
-                                MessageBox.error("작업 지시 생성에 실패하였습니다.");
-                            }.bind(this));
-                            this.navTo("Main", {});
-                        } else if (sMfgQty > mfgData) { // 입력된 작업지시 수량 > (판매문서/품목의 수량 - 기생성된 생산오더 수량 합계)
-                          
-                            MessageBox.error("작업지시 수량은 (판매 문서의 수량 - 기생성된 생산 오더의 수량)보다 작아야 합니다.");
-                        }
+        },
 
-                    } else if (lotSize > sMfgQty) { 
-                    
-                        MessageBox.error("로트 사이즈가 입력된 작업 지시 수량보다 큽니다.");
+        // 오류 시 처리 함수
+        handleError: function(xhr, status, error) {
+            // 메인 모델 가져오기
+            var oMainModel = this.getOwnerComponent().getModel("mainData");
 
-                } else if (lotSize < 0) { // 로트 사이즈가 0보다 작은지 확인
-                    MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야합니다.");
+            // 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
+            var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. 상태: " + status + ", 오류 메시지: " + error;
+
+            // oDataArray를 업데이트하여 오류 상태와 메시지를 추가
+            var updatedOData = this.oDataArray.map(function(data) {
+                return {
+                    ...data,
+                    Status: '2', // 에러 상태 코드
+                    Message: errorMessage // 에러 메시지
+                };
+            });
+
+            console.log("업데이트 값:", updatedOData); // 디버깅을 위한 로그 출력
+
+            // 업데이트된 oData를 서버에 다시 전송
+            this._getOdataCreate(oMainModel, "/ProdOrder", updatedOData)
+                .done(function() {
+                    // 성공적으로 처리한 후의 로직 (필요 시 추가)
+                }.bind(this))
+                .fail(function(jqXHR, textStatus, errorThrown) {
+                    // 서버에 데이터를 전송할 때 발생할 수 있는 오류 처리
+                    console.error("업데이트 실패:", textStatus, errorThrown);
+                    MessageBox.error("작업 지시 업데이트 중 오류가 발생했습니다.");
+                });
+        },
+
+        // CSRF 토큰을 가져오는 함수
+        getCSRFToken: function() {
+            return $.ajax({
+                url: "/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2",
+                type: "GET",
+                dataType: "json",
+                headers: {
+                    "X-CSRF-Token": "Fetch"
                 }
-            } else {
-                MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야합니다.");
-            }
-        },        
+            }).then(function(data, textStatus, xhr) {
+                return xhr.getResponseHeader("X-CSRF-Token");
+            });
+        },
 
         // 메인 페이지 이동
 		onCancel: function () {
@@ -963,3 +1163,4 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 		}
     });
 });
+  

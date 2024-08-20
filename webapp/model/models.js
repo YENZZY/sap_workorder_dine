@@ -1,8 +1,9 @@
 sap.ui.define([
     "sap/ui/model/json/JSONModel",
-    "sap/ui/Device"
+    "sap/ui/Device",
+    "sap/ui/model/odata/v2/ODataModel"
 ], 
-function (JSONModel, Device) {
+function (JSONModel, Device, ODataModel) {
     "use strict";
 
     return {
@@ -12,6 +13,11 @@ function (JSONModel, Device) {
         createDeviceModel: function () {
             var oModel = new JSONModel(Device);
             oModel.setDefaultBindingMode("OneWay");
+            return oModel;
+        },
+         // api
+         createProductionRoutingModel: function () {
+            var oModel = new ODataModel('/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/');
             return oModel;
         }
     };

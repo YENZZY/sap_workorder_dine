@@ -27,8 +27,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             this.initializeValueHelpInputs();
             
-            //작업지시 생성 라우팅 모델 설정
-            this.setModel(this.createProductionRoutingModel(), "WorkOrderAPI");
         },
 
 		_onRouteMatched: function () {
@@ -38,12 +36,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         _getData: function () {
             this.modelData();
 		},
-
-        createProductionRoutingModel: function () {
-            var oModel = new ODataModel('/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2');
-            console.log("oModel",oModel);
-            return oModel;
-        },
 
         setModelData: function () {
             var inputIds = [
@@ -119,7 +111,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             rankModelData("/ProdOrder", "dataModel");
             rankModelData("/ProdLvl", "prodLvlModel");
             rankModelData("/SchedPri", "schedPriModel");
-
             
         },
 
@@ -741,7 +732,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         MfgOrderPlannedTotalQty: lotSize, // 작업 수량
                         ProductionVersion: oData.ProductionVersion, // 생산 버전
                         MfgOrderPlannedStartDate: oData.MfgOrderPlannedStartDate, // 기본 시작일
-                        Yy1ProdRankOrd: oData.YY1_PRIO_RANK_ORD, // 생산 순위
+                        Yy1ProdRankOrd: oData.YY1_PROD_RANK_ORD, // 생산 순위
                         Yy1PrioRankOrd: oData.YY1_PRIO_RANK_ORD,// 우선 순위
                         Yy1ProdText: oData.YY1_PROD_TEXT_ORD
                     });
@@ -757,7 +748,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         MfgOrderPlannedTotalQty: remainderQty.toString(), // 작업 수량
                         ProductionVersion: oData.ProductionVersion, // 생산 버전
                         MfgOrderPlannedStartDate: oData.MfgOrderPlannedStartDate, // 기본 시작일
-                        Yy1ProdRankOrd: oData.YY1_PRIO_RANK_ORD, // 생산 순위
+                        Yy1ProdRankOrd: oData.YY1_PROD_RANK_ORD, // 생산 순위
                         Yy1PrioRankOrd: oData.YY1_PRIO_RANK_ORD,// 우선 순위
                         Yy1ProdText: oData.YY1_PROD_TEXT_ORD
                     });

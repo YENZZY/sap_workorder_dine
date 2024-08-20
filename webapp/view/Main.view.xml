@@ -37,6 +37,7 @@
                     ariaLabelledBy="title"
                     rows="{dataModel>/}"
                     selectionMode="MultiToggle"
+                    width="auto"
                 >
                     <extension>
                         <m:OverflowToolbar>
@@ -76,8 +77,9 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
-                            <m:Label text="상태" tooltip="상태"/>
+                            <m:Label text="상태" tooltip="상태" width="10em"/>
                             <template>
                                 <m:Text text="{dataModel>Status}"/>
                             </template>
@@ -88,6 +90,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="생산 오더 유형" tooltip="생산 오더 유형"/>
                             <template>
@@ -100,8 +103,9 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
-                            <m:Label text="생산 오더" />
+                            <m:Label text="생산 오더"/>
                             <template>
                                 <m:Text text="{dataModel>ManufacturingOrder}"/>
                             </template>
@@ -112,8 +116,9 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
-                            <m:Label text="판매 문서" />
+                            <m:Label text="판매 문서" width="10em"/>
                             <template>
                                 <m:Text text="{dataModel>SalesOrder}"/>
                             </template>
@@ -124,6 +129,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="오더 유형" />
                             <template>
@@ -136,6 +142,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="오더 유형 내역" tooltip="오더 유형 내역"/>
                             <template>
@@ -148,6 +155,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="제품" />
                             <template>
@@ -160,6 +168,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="제품 내역" />
                             <template>
@@ -172,6 +181,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="기본 시작일" />
                             <template>
@@ -191,6 +201,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="지시 수량" />
                             <template>
@@ -208,6 +219,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="단위" />
                             <template>
@@ -220,6 +232,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="생산 버전" />
                             <template>
@@ -232,6 +245,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="생산 순위" />
                             <template>
@@ -244,6 +258,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="우선 순위" />
                             <template>
@@ -256,6 +271,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="8rem"
                         >
                             <m:Label text="생산 주석" />
                             <template>
@@ -268,6 +284,7 @@
                             headerMenu="menu"
                             resizable="true"
                             autoResizable="true"
+                            width="15rem"
                         >
                             <m:Label text="메시지" />
                             <template>

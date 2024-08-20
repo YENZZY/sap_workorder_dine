@@ -39,7 +39,11 @@ sap.ui.define([
                  var jQueryScript = document.createElement('script');
                  jQueryScript.setAttribute('src', '/js/xlsx.js');
                  document.head.appendChild(jQueryScript);
-            }
+
+                  //작업지시 생성 라우팅 모델 설정
+                  this.setModel (models.createProductionRoutingModel(), "ProductRoutingApI")
+
+            },
         });
     }
 );

@@ -41,7 +41,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				return this._getODataRead(model, url).then(function(data) {
 					var oModel = new JSONModel(data);
 					this.setModel(oModel, modelName);
-					console.log("모델 설정됨:", modelName, this.getModel(modelName));
 				}.bind(this)).catch(function(error) {
 					console.error("데이터를 가져오는 데 실패했습니다:", url, error);
 				});
@@ -395,12 +394,23 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				}
 			]);
 
-			// this._mIntialWidth = {
-			// 	"firstName_col": "11rem",
-			// 	"lastName_col": "11rem",
-			// 	"city_col": "11rem",
-			// 	"size_col": "11rem"
-			// };
+			this._mIntialWidth = {
+				"status_col": "11rem",
+				"mfgOrderType_col": "11rem",
+				"manufacturingOrder_col": "11rem",
+				"salesOrder_col": "11rem",
+				"manufacturingOrderTypeName_col": "11rem",
+				"material_col": "11rem",
+				"productDescription_col": "11rem",
+				"mfgOrderPlannedStartDate_col": "11rem",
+				"mfgOrderPlannedTotalQty_col": "11rem",
+				"baseUnit_col": "11rem",
+				"productionVersion_col": "11rem",
+				"yy1ProdRankOrd_col": "11rem",
+				"yy1PrioRankOrd_col": "11rem",
+				"yy1ProdText_col": "11rem",
+				"message_col": "11rem"
+			};
 
 			Engine.getInstance().register(oTable, {
 				helper: this.oMetadataHelper,
@@ -504,10 +514,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 
 			oTable.getColumns().forEach(function(oColumn) {
 
-				// const sKey = this._getKey(oColumn);
-				// const sColumnWidth = oState.ColumnWidth[sKey];
+				const sKey = this._getKey(oColumn);
+				const sColumnWidth = oState.ColumnWidth[sKey];
 
-				// oColumn.setWidth(sColumnWidth || this._mIntialWidth[sKey]);
+				oColumn.setWidth(sColumnWidth || this._mIntialWidth[sKey]);
 
 				oColumn.setVisible(false);
 				oColumn.setSortOrder(CoreLibrary.SortOrder.None);
