@@ -16,7 +16,7 @@ server:
             - /test-resources
           url: https://ui5.sap.com
         backend:
-          - authenticationType: reentranceTicket # SAML support for vscode
+          # - authenticationType: reentranceTicket # SAML support for vscode
           - path: /sap/opu/odata/sap/ZSBPP_SALESORDERITEM
             url: https://my414076-api.s4hana.cloud.sap
             destination: DINE_STR_CUS_SAML_ASSERTION

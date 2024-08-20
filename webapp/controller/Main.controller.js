@@ -34,12 +34,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
         _getData: function () {
 			var oMainModel = this.getOwnerComponent().getModel("dineData"); //cus
 			var oDineModel = this.getOwnerComponent().getModel("mainData"); // dev
-
-			var rankModelData = function(url, modelName) {
-				this._getODataRead(oDineModel, url).then(function(dinedata){
-					this.setModel(new JSONModel(dinedata), modelName);
-					}.bind(this));
-				}.bind(this);
 			
             // commonModelData 함수를 this와 바인딩하여 정의
             var commonModelData = function(url, modelName) {
@@ -47,13 +41,19 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
                 this._getODataRead(oMainModel, url).then(function(commonData) {
                     var oModel = new JSONModel(commonData);
                     this.setModel(oModel, modelName);
+                }.bind(this));
+            }.bind(this); // commonModelData 함수 자체에 this를 바인딩
+			
+			var rankModelData = function(url, modelName) {
+				this._getODataRead(oDineModel, url).then(function(dinedata){
+					this.setModel(new JSONModel(dinedata), modelName);
 
 					if (modelName === "dataModel") {
 						var dataModel = this.getModel("dataModel").getData();
 						var mfgOrderModel = this.getModel("mfgOrderModel").getData();
 						var soModel = this.getModel("soModel").getData();
 						var productModel = this.getModel("productModel").getData();
-
+		
 						// 데이터 모델의 ManufacturingOrderType과 일치하는 mfgOrderModel의 항목을 찾기 
 						// dataModel에 ManufacturingOrderTypeName을 추가
 						dataModel.forEach(function(dataItem) {
@@ -65,21 +65,21 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 							if (matchingOrder) {
 								dataItem.ManufacturingOrderTypeName = matchingOrder.ManufacturingOrderTypeName;
 							}
-
+		
 							// 제품
 							var matchingMaterial = soModel.find(function(soItem) {
 								return soItem.SalesOrder === dataItem.SalesOrder && soItem.SalesOrderItem === dataItem.SalesOrderItem;
 							});
-
+		
 							if(matchingMaterial) {
 								dataItem.Material = matchingMaterial.Material;
 							}
-
+		
 							//제품 내역 및 단위
 							var matchingProduct = productModel.find(function(prodItem){
 								return prodItem.Product === dataItem.Material;
 							});
-
+							console.log("mtp", matchingProduct);
 							if(matchingProduct) {
 								dataItem.ProductDescription = matchingProduct.ProductDescription;
 								dataItem.BaseUnit = matchingProduct.BaseUnit;
@@ -90,17 +90,19 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						var updatedModel = new JSONModel(dataModel);
 						this.setModel(updatedModel, "dataModel");
 					}
-                }.bind(this));
-            }.bind(this); // commonModelData 함수 자체에 this를 바인딩
+					}.bind(this));
+				}.bind(this);
 
 			commonModelData("/MfgOrder", "mfgOrderModel");
 			commonModelData("/SalesOrder", "soModel");
 			commonModelData("/Product", "productModel");
 			commonModelData("/ProductionVersion", "prodVerModel");
 			commonModelData("/Plant", "plantModel");
-            rankModelData("/ProdLvl", "prodLvlModel");
+			rankModelData("/ProdLvl", "prodLvlModel");
             rankModelData("/SchedPri", "schedPriModel");
 			rankModelData("/ProdOrder", "dataModel");
+
+           
 		},
 		
 		// 단일 생성(수주) 페이지 이동
@@ -130,7 +132,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 
 		onUpload: function (oEvent) {
 			var file = oEvent.getParameter("files")[0]; // 선택된 파일 가져오기
-			var oMainModel = this.getOwnerComponent().getModel();
+			var oMainModel = this.getOwnerComponent().getModel("mainData");
 		
 			if (file && window.FileReader) {
 				var reader = new FileReader();

@@ -5,9 +5,6 @@
     xmlns:core="sap.ui.core"
     xmlns="sap.m"
     xmlns:f="sap.f"
-    xmlns:mdcv="sap.ui.mdc.valuehelp"
-    xmlns:mdcvc="sap.ui.mdc.valuehelp.content"
-    xmlns:vhfb="sap.ui.mdc.filterbar.vh"
 >
     <f:DynamicPage showFooter="true">
         <f:title>

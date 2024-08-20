@@ -16,9 +16,9 @@ sap.ui.define([
     'sap/ui/model/FilterOperator',
     'sap/m/DatePicker',
     'sap/m/Select',
-    'sap/ui/model/Model'
+    'sap/ui/model/odata/v2/ODataModel'
 ],
-function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select, Model) {
+function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select, ODataModel) {
     "use strict";
 
     return Controller.extend("dinewkorder.controller.PageSO", {
@@ -27,6 +27,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             this.initializeValueHelpInputs();
 
+            //작업지시 생성 라우팅 모델 설정
+            this.setModel(this.createProductionRoutingModel(), "WorkOrderAPI");
         },
 
 		_onRouteMatched: function () {
@@ -38,11 +40,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
 		},
 
-        // createDineModel: function () {
-        //     var oModel = new ODataModel ('/sap/opu/odata/sap/ZSBPP_SALESORDERITEM');
-        //     console.log("oModel",oModel);
-        //     return oModel;
-        // },
+        createProductionRoutingModel: function () {
+            var oModel = new ODataModel('/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2');
+            console.log("oModel",oModel);
+            return oModel;
+        },
 
         setModelData: function () {
             var inputIds = [
@@ -86,14 +88,18 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             // commonModelData 함수를 this와 바인딩하여 정의
             var commonModelData = function(url, modelName) {
                 this._getODataRead(oMainModel, url).then(function(commonData) {
-                    var oModel = new JSONModel(commonData);
-                    this.setModel(oModel, modelName);
+                    if (modelName === "mfgOrderModel") { // 오더유형
+                        var filteredData = Array.isArray(commonData) ? 
+                        commonData.filter(function(item) {
+                            return item.ManufacturingOrderType === "DN01"; // 수주
+                        }) : [];
+                    
+                        // 필터링된 데이터로 JSON 모델 생성
+                        var oModel = new JSONModel(filteredData);
+                        this.setModel(oModel, modelName);
 
-                    // 모델이 mfgOrderModel일 때
-                    if (modelName === "mfgOrderModel") {
                         var oMfgOrderModel = this.getModel("mfgOrderModel");
                         var aData = oMfgOrderModel.getProperty("/");
-                        
                         if (aData.length > 0) {
                             var sSelectedKey = aData[0].ManufacturingOrderType;
                             console.log("Selected Key", sSelectedKey);
@@ -104,6 +110,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
                             var oInput = this.byId("mfgOrderTypeName"); 
                             oInput.setValue(sManufacturingOrderTypeName);
+                    } else {
+                        var oModel = new JSONModel(commonData);
+                        this.setModel(oModel, modelName);
                         }
                     }                    
                 }.bind(this));
@@ -216,7 +225,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 // 기본 검색이 실행될 때 FilterBar 검색 트리거
                 this.oSearchSuggestion.attachSearch(function () {
                     oFilterBar.search();
-                });
+                }.bind(this));
         
                 oDialogSuggestions.getTableAsync().then(function (oTable) {
                     oTable.setModel(this.getOwnerComponent().getModel(modelName));
@@ -420,6 +429,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             oDialogSuggestions.data("filterPaths", filterPaths);
                 oDialogSuggestions.open();
             }.bind(this));
+            this.initializeValueHelpInputs();
         },
 
         onPageVHOk: function (oEvent) {
@@ -801,30 +811,30 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var oMainModel = this.getOwnerComponent().getModel("mainData");
             var lotSize = this.byId("lotSize").getValue();
             var oData = {
-                Status: "2",
-                MfgOrderType: "1",
                 SalesOrder: this.byId("salesOrderVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 판매 문서
                 SalesOrderItem: this.byId("salesOrderItemVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 판매 문서 내역
                 ManufacturingOrderType: this.byId("mfgOrderType").getSelectedKey(), // 오더 유형
-                MfgOrderPlannedTotalQty: this.byId("mfgOrderPlannedTotalQty").getValue(), // 작업 수량
+                Material: this.byId("materialVH").getValue(),
+                ProductionPlant: this.byId("plantVH").getValue(), // 플랜트
+                TotalQuantity: this.byId("mfgOrderPlannedTotalQty").getValue(), // 작업 수량
                 ProductionVersion: this.byId("prodVerVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 생산 버전
                 MfgOrderPlannedStartDate: this.byId("startDate").getDateValue(), // 기본 시작일
-                Yy1ProdRankOrd: this.byId("prodLvlVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 생산 순위
-                Yy1PrioRankOrd: this.byId("schedPriVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 우선 순위
-                Yy1ProdText: this.byId("prodAnnotaion").getValue() // 생산 주석 (Input 컨트롤)
+                YY1_PROD_RANK_ORD: this.byId("prodLvlVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 생산 순위
+                YY1_PRIO_RANK_ORD: this.byId("schedPriVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 우선 순위
+                YY1_PROD_TEXT_ORD: this.byId("prodAnnotaion").getValue() // 생산 주석 (Input 컨트롤)
             };
         
             console.log("odata", oData);
         
             // 데이터 유효성 검사 (예시: 필수 입력값 체크)
-            if (!oData.SalesOrder || !oData.SalesOrderItem || !oData.ManufacturingOrderType || !oData.MfgOrderPlannedTotalQty || !oData.MfgOrderPlannedStartDate) {
+            if (!oData.SalesOrder || !oData.SalesOrderItem || !oData.ManufacturingOrderType || !oData.TotalQuantity || !oData.MfgOrderPlannedStartDate) {
                 MessageBox.error("필수 값을 입력해주세요.");
                 return;
             }
 
             var sSalesOrder = oData.SalesOrder;
             var sSalesOrderItem = oData.SalesOrderItem;
-            var sMfgQty = parseFloat(oData.MfgOrderPlannedTotalQty);
+            var sMfgQty = parseFloat(oData.TotalQuantity);
 
             //판매 문서 수량 가져오기
             var oSoModel = this.getModel("soModel").getData();
@@ -865,7 +875,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                             // 로트 사이즈로 나누어진 작업지시 데이터 생성
                             for (var i = 0; i < numOrders; i++) {
                                 oDataArray.push({
-                                    Status: "2",
                                     MfgOrderType: "1",
                                     SalesOrder: sSalesOrder,
                                     SalesOrderItem: sSalesOrderItem,
@@ -882,7 +891,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                             // 나머지 수량이 있는 경우 추가 작업지시 데이터 생성
                             if (remainderQty > 0) {
                                 oDataArray.push({
-                                    Status: "2",
                                     MfgOrderType: "1",
                                     SalesOrder: sSalesOrder,
                                     SalesOrderItem: sSalesOrderItem,
@@ -897,6 +905,28 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                             }
 
                             console.log("oda",oDataArray);
+
+                            var oWorkOrderAPI = this.getModel("WorkOrderAPI");
+                                var sEntitySet = "/A_ProductionOrder_2"; 
+                                var Status = "";
+                                var Message = "";
+                                oWorkOrderAPI.create(sEntitySet, oData, {
+                                    
+                                    success: function (oResponse) {
+                                        oDataArray.map(function (){
+                                            Status = "1";
+                                            Message = oResponse;
+                                         }.bind(this));
+                                    },
+                                    error: function (oError) {
+                                        // 요청 실패 후 처리
+                                        oDataArray.map(function (){
+                                          Status = "2";
+                                          Message = oError;
+                                        }.bind(this));
+                                    }
+                                });
+                            
                             // OData 모델을 사용하여 데이터 저장
                             var promises = oDataArray.map(function(data) {
                                 return this._getODataCreate(oMainModel, "/ProdOrder", data);
@@ -905,11 +935,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                             // 모든 데이터 저장 시 성공/실패 처리
                             Promise.all(promises).then(function() {
                                 MessageBox.success("작업 지시 생성에 성공하였습니다.");
-                                this.navTo("Main", {});
                             }.bind(this)).catch(function() {
                                 MessageBox.error("작업 지시 생성에 실패하였습니다.");
                             }.bind(this));
-
+                            this.navTo("Main", {});
                         } else if (sMfgQty > mfgData) { // 입력된 작업지시 수량 > (판매문서/품목의 수량 - 기생성된 생산오더 수량 합계)
                           
                             MessageBox.error("작업지시 수량은 (판매 문서의 수량 - 기생성된 생산 오더의 수량)보다 작아야 합니다.");

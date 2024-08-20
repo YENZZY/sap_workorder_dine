@@ -13,15 +13,22 @@ sap.ui.define([
     'sap/m/Input',
     'sap/m/Token',
     'sap/ui/model/Filter',
-    'sap/ui/model/FilterOperator'
+    'sap/ui/model/FilterOperator',
+    'sap/m/DatePicker',
+    'sap/m/Select',
+    'sap/ui/model/odata/v2/ODataModel'
 ],
-function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator) {
+function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select, ODataModel) {
     "use strict";
 
     return Controller.extend("dinewkorder.controller.PageMP", {
         onInit: function () {
 			this.getRouter().getRoute("PageMP").attachMatched(this._onRouteMatched, this);
 
+            this.initializeValueHelpInputs();
+            
+            //작업지시 생성 라우팅 모델 설정
+            this.setModel(this.createProductionRoutingModel(), "WorkOrderAPI");
         },
 
 		_onRouteMatched: function () {
@@ -32,26 +39,102 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             this.modelData();
 		},
 
+        createProductionRoutingModel: function () {
+            var oModel = new ODataModel('/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2');
+            console.log("oModel",oModel);
+            return oModel;
+        },
+
+        setModelData: function () {
+            var inputIds = [
+                "plantVH", "prodVerVH", "prodLvlVH", 
+                "schedPriVH", "materialVH", "mfgOrderType", "mfgOrderTypeName", 
+                "mfgOrderPlannedTotalQty", "startDate", "lotSize", "prodDescription", "schedDescription", "prodAnnotaion"
+            ];
+            
+            inputIds.forEach(function(sId) {
+                var oControl = this.byId(sId);
+                
+                if (oControl instanceof MultiInput) {
+                    // MultiInput의 경우 토큰을 지움
+                    oControl.setTokens([]);
+                } else if (oControl instanceof Input) {
+                    // 일반 Input의 경우 값을 지움
+                    oControl.setValue("");
+                } else if (oControl instanceof DatePicker) {
+                    // DatePicker의 경우 날짜를 초기화
+                    oControl.setValue("");
+                    oControl.setDateValue(null);
+                } else if (oControl instanceof Select) {
+                    // Select의 경우 선택된 키를 초기화
+                    oControl.setSelectedKey(null);
+                    oControl.setValue("");
+                }
+            }.bind(this));
+        },         
+
         // model db
         modelData: function () {
-            var oMainModel = this.getOwnerComponent().getModel();
-        
+            var oDineModel = this.getOwnerComponent().getModel("mainData");
+            var oMainModel = this.getOwnerComponent().getModel("dineData");
+
+            var rankModelData = function(url, modelName) {
+            this._getODataRead(oDineModel, url).then(function(dinedata){
+                this.setModel(new JSONModel(dinedata), modelName);
+                }.bind(this));
+            }.bind(this);
+
             // commonModelData 함수를 this와 바인딩하여 정의
             var commonModelData = function(url, modelName) {
                 this._getODataRead(oMainModel, url).then(function(commonData) {
-                    this.setModel(new JSONModel(commonData), modelName);
+                    var oModel = new JSONModel(commonData);
+                    this.setModel(oModel, modelName);
+
+                    // 모델이 mfgOrderModel일 때
+                    if (modelName === "mfgOrderModel") {
+                        var oMfgOrderModel = this.getModel("mfgOrderModel");
+                        var aData = oMfgOrderModel.getProperty("/");
+                        
+                        if (aData.length > 0) {
+                            var sSelectedKey = aData[0].ManufacturingOrderType;
+                            console.log("Selected Key", sSelectedKey);
+                    
+                            var sManufacturingOrderTypeName = aData.find(function(item) {
+                                return item.ManufacturingOrderType === sSelectedKey;
+                            })?.ManufacturingOrderTypeName || "";
+
+                            var oInput = this.byId("mfgOrderTypeName"); 
+                            oInput.setValue(sManufacturingOrderTypeName);
+                        }
+                    }                    
                 }.bind(this));
             }.bind(this); // commonModelData 함수 자체에 this를 바인딩
-        
+
             // 함수 호출 시 this가 올바르게 참조되도록 수정
             commonModelData("/SalesOrder", "soModel");
             commonModelData("/ProductionVersion", "prodVerModel"); 
             commonModelData("/MfgOrder", "mfgOrderModel"); 
             commonModelData("/Product", "productModel");
             commonModelData("/Plant", "plantModel");
-            commonModelData("/ProdLvl", "prodLvlModel");
-            commonModelData("/SchedPri", "schedPriModel");
+            rankModelData("/ProdOrder", "dataModel");
+            rankModelData("/ProdLvl", "prodLvlModel");
+            rankModelData("/SchedPri", "schedPriModel");
+
+            
         },
+
+         // MultiInput 초기화 및 설정
+         initializeValueHelpInputs: function() {
+            this.aMultiInputs = ["materialVH", "plantVH", "prodVerVH", "prodLvlVH", "schedPriVH"];
+        
+            this.aMultiInputs.forEach(function(sId) {
+                var oMultiInput = this.byId(sId);
+                if (oMultiInput) {
+                    oMultiInput.attachBrowserEvent("focusout", this.onPageVHFocusOut.bind(this));
+                    oMultiInput.attachEvent("change", this.onTokenDelete, this);
+                    }
+                }.bind(this));
+            },   
 
         // valuehelp
         onPageVH: function (oEvent) {
@@ -60,13 +143,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var filterName, label, keys, modelName, columnLabels, inputId, filterPaths;
         
             // ID에 따라 조건을 설정
-            if (sValueHelpId.includes("productVH")) {
+            if (sValueHelpId.includes("materialVH")) {
                 filterName = "ProductVH";
                 label = "제품";
                 keys = ["Product","ProductExternalID", "IndustrySector", "ProductType", "ProductGroup", "GrossWeight", "NetWeight", "WeightUnit"];
                 modelName = "productModel";
                 columnLabels = ["제품", "제품 외부 ID", "산업 부문", "제품 유형", "제품 그룹", "총 중량", "순 중량", "무게 단위"];
-                inputId = "productVH";
+                inputId = "materialVH";
                 filterPaths = ["Product","ProductExternalID", "IndustrySector", "ProductType", "ProductGroup", "GrossWeight", "NetWeight", "WeightUnit"];
         
             } else if (sValueHelpId.includes("plantVH")) {
@@ -81,11 +164,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             } else if (sValueHelpId.includes("prodVerVH")) {
                 filterName = "ProductVerVH";
                 label = "생산 버전";
-                keys = ["Material", "Plant", "ProductionVersion", "ProductionVersionText"];
+                keys = ["ProductionVersion", "Material", "Plant", "ProductionVersionText"];
                 modelName = "prodVerModel";
-                columnLabels = ["제품", "플랜트", "생산 버전", "생산 버전명"];
+                columnLabels = ["생산 버전", "제품", "플랜트", "생산 버전명"];
                 inputId = "prodVerVH";
-                filterPaths = ["Material", "Plant", "ProductionVersion", "ProductionVersionText"];
+                filterPaths = ["ProductionVersion", "Material", "Plant", "ProductionVersionText"];
 
             } else if (sValueHelpId.includes("prodLvlVH")) {
                 filterName = "RankVH";
@@ -105,23 +188,25 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 inputId = "schedPriVH";
                 filterPaths = ["Companycode", "Referencecodetype", "Referencecodeid", "Description", "Activestate", "Referencevalue"];
 
-            }
-        
+            } 
+            var keyId = (sValueHelpId.includes("prodLvlVH") || sValueHelpId.includes("schedPriVH") ? keys[2] : keys[0]);
             this.oSuggestion = new MultiInput();
             this.oSearchSuggestion = new SearchField();
         
-            this.dialogSuggestion = this.loadFragment({
+            this.loadFragment({
                 name: `dinewkorder.view.Fragments.${filterName}`
             }).then(function (oDialogSuggestions) {
                 var oFilterBar = oDialogSuggestions.getFilterBar();
-        
+                
+                oDialogSuggestions.setKey(keyId);
+                console.log("keyid",keyId);
                 this.vhdSuggestions = oDialogSuggestions;
                 this.getView().addDependent(oDialogSuggestions);
 
                 // 필터링을 위한 Key 필드 설정
                 oDialogSuggestions.setRangeKeyFields([{
                     label: label,
-                    key: keys[0], // 기본 키 필드 설정
+                    key: keyId, // 기본 키 필드 설정
                     type: "string",
                     typeInstance: new TypeString({}, {
                         maxLength: 7
@@ -135,7 +220,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 // 기본 검색이 실행될 때 FilterBar 검색 트리거
                 this.oSearchSuggestion.attachSearch(function () {
                     oFilterBar.search();
-                });
+                }.bind(this));
+
+                console.log("this.oSearchSuggestion",this.oSearchSuggestion);
         
                 oDialogSuggestions.getTableAsync().then(function (oTable) {
                     oTable.setModel(this.getOwnerComponent().getModel(modelName));
@@ -234,13 +321,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                             oTable.addColumn(oColumnPlantName);
         
                         } else if (filterName === "ProductVerVH") {
-                            // 제품
-                            var oColumnMaterial = new UIColumn({
+                            // 생산 버전
+                            var oColumnProductionVersion = new UIColumn({
                                 label: new Label({ text: columnLabels[0] }),
                                 template: new Text({ wrapping: false, text: `{${modelName}>${keys[0]}}` })
                             });
-                            oColumnMaterial.data({ fieldName: keys[0] });
-                            oTable.addColumn(oColumnMaterial);
+                            oColumnProductionVersion.data({ fieldName: keys[0] });
+                            oTable.addColumn(oColumnProductionVersion);
                             
                             // 플랜트
                             var oColumnPlant = new UIColumn({
@@ -250,16 +337,16 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                             oColumnPlant.data({ fieldName: keys[1] });
                             oTable.addColumn(oColumnPlant);
                             
-                            // 생산 버전
-                            var oColumnProductionVersion = new UIColumn({
+                            // 제품
+                            var oColumnMaterial = new UIColumn({
                                 label: new Label({ text: columnLabels[2] }),
                                 template: new Text({ wrapping: false, text: `{${modelName}>${keys[2]}}` })
                             });
-                            oColumnProductionVersion.data({ fieldName: keys[2] });
-                            oTable.addColumn(oColumnProductionVersion);
-                            
-                            // 생산 버전명
-                            var oColumnProductionVersionText = new UIColumn({
+                            oColumnMaterial.data({ fieldName: keys[2] });
+                            oTable.addColumn(oColumnMaterial);
+
+                             // 생산 버전명
+                             var oColumnProductionVersionText = new UIColumn({
                                 label: new Label({ text: columnLabels[3] }),
                                 template: new Text({ wrapping: false, text: `{${modelName}>${keys[3]}}` })
                             });
@@ -356,11 +443,50 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             oDialogSuggestions.data("filterPaths", filterPaths);
                 oDialogSuggestions.open();
             }.bind(this));
+            this.initializeValueHelpInputs();
         },
 
         onPageVHOk: function (oEvent) {
 			var aTokens = oEvent.getParameter("tokens");
+            console.log("at",aTokens);
 			this.oMultiInputSuggestion.setTokens(aTokens);
+
+			 // 생산 순위 내역 및 우선 순위 내역 input 데이터 추가
+             if(this.oMultiInputSuggestion.getId().includes("prodLvlVH")){
+                var RidToken = this.byId("prodLvlVH").getTokens();
+                var inputText;
+                var oModel = this.getModel("prodLvlModel");
+                var aData = oModel.getProperty("/");
+                for (var i = 0; i < aData.length; i++) {
+                    for (var j = 0; j < RidToken.length; j++) {
+                        var sKey = RidToken[j].getKey();
+                        if (aData[i]["Referencecodeid"] === sKey) {
+                            inputText = aData[i]["Description"];
+                            break;
+                        }
+                    }
+                }
+                var oInput = this.byId("prodDescription");
+                oInput.setValue(inputText);
+            }
+            if(this.oMultiInputSuggestion.getId().includes("schedPriVH")){
+                var RidToken = this.byId("schedPriVH").getTokens();
+                var inputText;
+                var oModel = this.getModel("schedPriModel");
+                var aData = oModel.getProperty("/");
+                for (var i = 0; i < aData.length; i++) {
+                    for (var j = 0; j < RidToken.length; j++) {
+                        var sKey = RidToken[j].getKey();
+                        if (aData[i]["Referencecodeid"] === sKey) {
+                            inputText = aData[i]["Description"];
+                            break;
+                        }
+                    }
+                }
+                var oInput = this.byId("schedDescription");
+                oInput.setValue(inputText);
+            }
+
 			this.vhdSuggestions.close();
 		},
 
@@ -431,54 +557,77 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var oMultiInput = oEvent.getSource();
             var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
             var sValueHelpId = oMultiInput.getId();
-            var contextModel ,contextProperty; 
-            if(sValueHelpId.includes("productVH")){
+            var contextModel ,contextProperty, sKeyData, sTextData, sId; 
+            if(sValueHelpId.includes("materialVH")){
                 contextModel = "productModel";
-                contextProperty = "productVH";
+                contextProperty = "Product";
 
             } else if(sValueHelpId.includes("plantVH")){
                 contextModel = "plantModel";
-                contextProperty = "plantVH";
+                contextProperty = "Plant";
 
             } else if(sValueHelpId.includes("prodVerVH")){
                 contextModel = "prodVerModel";
-                contextProperty = "prodVerVH";
+                contextProperty = "ProductionVersion";
 
             } else if(sValueHelpId.includes("prodLvlVH")){
                 contextModel = "prodLvlModel";
-                contextProperty = "prodLvlVH";
+                contextProperty = "Referencecodeid";
+                sKeyData = "Referencecodeid";
+                sTextData = "Description";
+                sId = "prodDescription";
 
             } else if(sValueHelpId.includes("schedPriVH")){
                 contextModel = "schedPriModel";
-                contextProperty = "schedPriVH";
+                contextProperty = "Referencecodeid";
+                sKeyData = "Referencecodeid";
+                sTextData = "Description";
+                sId = "schedDescription";
 
             }
             
             if (oSelectedItem) {
                 var oContext = oSelectedItem.getBindingContext(contextModel);
                 var sKey = oContext.getProperty(contextProperty); // 키 값 가져오기
+                var oModel = this.getModel(contextModel);
+                var aData = oModel.getProperty("/");
 
                 // 현재 MultiInput에 존재하는 토큰들을 가져오기
                 var aExistingTokens = oMultiInput.getTokens();
 
-                    // 중복된 토큰이 있는지 확인
-                    var bTokenExists = aExistingTokens.some(function (oToken) {
-                        return oToken.getKey() === sKey;
-                    });
-
-                    // 중복된 토큰이 없을 경우에만 새 토큰을 추가
-                    if (!bTokenExists) {
-                        oMultiInput.addToken(new Token({
-                            key: sKey,
-                            text: sKey
-                        }));
-                    } else {
-                        // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
-                        MessageToast.show("이미 추가된 토큰입니다.");
+                // 중복된 토큰이 있는지 확인
+                var bTokenExists = aExistingTokens.some(function (oToken) {
+                    return oToken.getKey() === sKey;
+                });
+                
+                // 생산 순위 내역 및 우선 순위 내역 input 데이터 추가
+                if(contextModel === "prodLvlModel" || contextModel === "schedPriModel"){
+                    var inputText;
+                    for (var i = 0; i < aData.length; i++) {
+                        if (aData[i][sKeyData] === sKey) {
+                            inputText = aData[i][sTextData];
+                            break;
+                        }
                     }
+                    var oInput = this.byId(sId);
+                    console.log("oInput", oInput);
+                    console.log("inputText", inputText);
+                    oInput.setValue(inputText);
+                }
 
-                    // 입력 값을 지우기 (선택 후 텍스트 박스를 비움)
-                    oMultiInput.setValue("");
+                // 중복된 토큰이 없을 경우에만 새 토큰을 추가
+                if (!bTokenExists) {
+                    oMultiInput.addToken(new Token({
+                        key: sKey,
+                        text: sKey
+                    }));
+                } else {
+                    // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
+                    MessageToast.show("이미 추가된 토큰입니다.");
+                }
+
+                // 입력 값을 지우기 (선택 후 텍스트 박스를 비움)
+                oMultiInput.setValue("");
             }
         },
 
@@ -489,8 +638,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         
             // ID에 따라 적절한 MultiInput ID 선택
             var inputId;
-            if (sId.includes("productVH")) {
-                inputId = "productVH";
+            if (sId.includes("materialVH")) {
+                inputId = "materialVH";
             } else if (sId.includes("plantVH")) {
                 inputId = "plantVH";
             } else if (sId.includes("prodVerVH")) {
@@ -509,10 +658,46 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             }
         },
 
+        onTokenUpdate: function (oEvent) {
+            var oMultiInput = oEvent.getSource();
+            var aTokens = oMultiInput.getTokens();
+            if(this.selectedSalesOrder===0){
+                var salesItemToken = this.byId("salesOrderItemVH").setTokens([]);
+                console.log("sit",salesItemToken);
+            }
+            // 단일 토큰만 허용하도록 설정
+            if (aTokens.length > 0) {
+                oMultiInput.removeAllTokens();
+                MessageToast.show("하나의 항목만 입력할 수 있습니다.");
+            }
+        },
+
         // value help 끝
+
+         // 오더 유형 타입 내역 데이터
+         getMfgOrderTypeName: function (oEvent) {
+            var sSelectedKey = oEvent.getParameter("selectedItem").getKey(); // 선택된 ManufacturingOrderType
+            var oMfgOrderModel = this.getModel("mfgOrderModel");
+            var aData = oMfgOrderModel.getProperty("/"); // 모델의 전체 데이터 배열
+            
+            // 선택된 ManufacturingOrderType에 해당하는 이름 찾기
+            var sManufacturingOrderTypeName = "";
+            for (var i = 0; i < aData.length; i++) {
+                if (aData[i].ManufacturingOrderType === sSelectedKey) {
+                    sManufacturingOrderTypeName = aData[i].ManufacturingOrderTypeName;
+                    break;
+                }
+            }
+            console.log("sManufacturingOrderTypeName",sManufacturingOrderTypeName);
+            // Input 필드에 ManufacturingOrderTypeName 설정
+            var oInput = this.byId("mfgOrderTypeName"); 
+            oInput.setValue(sManufacturingOrderTypeName);
+            console.log("oi",oInput);
+        },
 
         // 메인 페이지 이동
 		onCancel: function () {
+            this.setModelData();
 			this.navTo("Main",{});
 		}
     });

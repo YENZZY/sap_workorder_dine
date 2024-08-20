@@ -25,7 +25,7 @@
                         <Label text="제품" required="true"/>
                         <MultiInput
                             width="15em"
-                            id="productVH"
+                            id="materialVH"
                             valueHelpRequest="onPageVH"
                             suggestionItemSelected="onPageVHSelected"
                             suggestionRows="{
@@ -72,25 +72,28 @@
                     <VBox class="sapUiMediumMarginEnd" >
                         <Label text="오더 유형" required="true"/>
                         <Select
-                            selectedKey="{dataModel>/ManufacturingOrderType}"
+                            id="mfgOrderType"
+                            selectedKey=""
+                            showSecondaryValues= "true"
                             items="{
                                 path: 'mfgOrderModel>/',
                                 sorter: { path: 'ManufacturingOrderType' }
                             }"
                             width="17em"
+                            change="getMfgOrderTypeName"
                         >
                             <core:Item key="{mfgOrderModel>ManufacturingOrderType}" text="{mfgOrderModel>ManufacturingOrderType}" />
                         </Select>
                     </VBox>
                     <VBox>
                         <Label text="오더 유형 내역"/>
-                        <Input type="Text" width="15em" value="{path: 'mfgOrderModel>ManufacturingOrderTypeName', formatter: 'onMfgOrderName'}" editable="false"/>
+                        <Input id="mfgOrderTypeName" type="Text" width="15em"  editable="false"/>
                     </VBox>
                 </HBox>
                 <HBox class="sapUiMediumMarginBottom">
                     <VBox class="sapUiMediumMarginEnd">
                         <Label text="작업지시 수량" required="true"/>
-                        <Input type="Text" width="15em"/>
+                        <Input id="mfgOrderPlannedTotalQty" type="Text" width="15em"/>
                     </VBox>
                     <VBox class="sapUiMediumMarginEnd">
                         <Label text="생산 버전" required="true"/>
@@ -118,11 +121,11 @@
                     </VBox>
                     <VBox class="sapUiMediumMarginEnd">
                         <Label text="기본 시작일" required="true"/>
-                        <DatePicker id="validityStartDate" displayFormat="yyyy-MM-dd" valueFormat="yyyy-MM-dd" value="{filterModel>/Hiredate}" width="15em"/>
+                        <DatePicker id="startDate" displayFormat="yyyy-MM-dd" valueFormat="yyyy-MM-dd" width="15em"/>
                     </VBox>
                     <VBox>
                         <Label text="로트 사이즈"/>
-                        <Input type="Text" width="15em"/>
+                        <Input id="lotSize" type="Text" width="15em" value="0"/>
                     </VBox>
                 </HBox>
                 <HBox class="sapUiMediumMarginBottom">
@@ -137,6 +140,7 @@
                             path: 'prodLvlModel>/'
                             }"
                             liveChange="onTokenUpdate"
+                            change="getInputValue"
                         >
                             <suggestionColumns>
                                 <Column>
@@ -152,7 +156,7 @@
                     </VBox>
                     <VBox>
                         <Label text="생산 순위 내역"/>
-                        <Input id="prodLvlDescription" type="Text" width="15em" value="{prodLvlModel>Description}" editable="false"/>
+                        <Input id="prodDescription" type="Text" width="15em" editable="false"/>
                     </VBox>
                 </HBox>
                 <HBox class="sapUiMediumMarginBottom">
@@ -182,13 +186,13 @@
                     </VBox>
                     <VBox>
                         <Label text="우선 순위 내역"/>
-                        <Input type="Text" width="15em" value="{schedPriModel>Description}" editable="false"/>
+                        <Input id="schedDescription" type="Text" width="15em" editable="false"/>
                     </VBox>
                 </HBox>
                 <HBox>
                     <VBox>
                         <Label text="생산 주석"/>
-                        <Input type="Text" width="63em"/>
+                        <Input id="prodAnnotaion" type="Text" width="63em"/>
                     </VBox>
                 </HBox>
             </VBox>
