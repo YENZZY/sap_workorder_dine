@@ -827,7 +827,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             console.log("odata", oData);
         
             // 데이터 유효성 검사 (예시: 필수 입력값 체크)
-            if (!oData.SalesOrder || !oData.SalesOrderItem || !oData.ManufacturingOrderType || !oData.TotalQuantity || !oData.MfgOrderPlannedStartDate) {
+            if (!oData.SalesOrder || !oData.SalesOrderItem || !oData.ProductionVersion || !oData.ManufacturingOrderType || !oData.TotalQuantity || !oData.MfgOrderPlannedStartDate) {
                 MessageBox.error("필수 값을 입력해주세요.");
                 return;
             }
@@ -848,7 +848,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var oDataModel = this.getModel("dataModel").getData();
                 var mfgQtydata = 0; // 초기화
                  
-            // 데이터 모델에서 기 생성된 작업 지시 수량을 더합니다.
+            // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
             oDataModel.forEach(function(data) {
                     if (data.SalesOrder === sSalesOrder && data.SalesOrderItem === sSalesOrderItem) {
                     mfgQtydata += data.MfgOrderPlannedTotalQty || 0;
