@@ -689,85 +689,140 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         // 저장
         onSave: function () {
             var oMainModel = this.getOwnerComponent().getModel("mainData");
-            var lotSize = this.byId("lotSize").getValue() || "0";
-            var oData = {
-                ManufacturingOrderType: this.byId("mfgOrderType").getSelectedKey(), // 오더 유형
-                Material: this.byId("materialVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 제품
-                ProductionPlant: this.byId("plantVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 플랜트
-                TotalQuantity: this.byId("mfgOrderPlannedTotalQty").getValue(), // 작업 수량
-                ProductionVersion: this.byId("prodVerVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 생산 버전
-                MfgOrderPlannedStartDate: this.byId("startDate").getDateValue(), // 기본 시작일
-                YY1_PROD_RANK_ORD: this.byId("prodLvlVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 생산 순위
-                YY1_PRIO_RANK_ORD: this.byId("schedPriVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 우선 순위
-                YY1_PROD_TEXT_ORD: this.byId("prodAnnotaion").getValue() // 생산 주석 (Input 컨트롤)
-            };
-            console.log("odata", oData);
+            var lotSize = this.byId("lotSize").getValue();
+            // 입력 값을 가져오는 함수
+            var getInputValue = function(id, defaultValue) {
+                // 특정 ID의 토큰 값을 가져와 첫 번째 토큰의 키 값을 반환하거나 기본값을 반환
+                return this.byId(id).getTokens().map(function(token) { return token.getKey(); })[0] || defaultValue;
+            }.bind(this);
+            
+            // 텍스트 필드에서 값을 가져오는 함수
+            var getValue = function(id) {
+                return this.byId(id).getValue();
+            }.bind(this);
+            
+            // 날짜 필드에서 날짜 값을 가져오는 함수
+            var getDateValue = function(id) {
+                return this.byId(id).getDateValue();
+            }.bind(this);
+
+                var ManufacturingOrderType = this.byId("mfgOrderType").getSelectedKey(); // 오더 유형
+                var Material = getInputValue("materialVH"); // 제품
+                var ProductionPlant = getInputValue("plantVH"); // 플랜트
+                var TotalQuantity = parseFloat(getValue("mfgOrderPlannedTotalQty")); // 작업 수량
+                var ProductionVersion = getInputValue("prodVerVH"); // 생산 버전
+                var MfgOrderPlannedStartDate = getDateValue("startDate"); // 기본 시작일
+                var YY1_PROD_RANK_ORD = getInputValue("prodLvlVH"); // 생산 순위
+                var YY1_PRIO_RANK_ORD = getInputValue("schedPriVH"); // 우선 순위
+                var YY1_PROD_TEXT_ORD = getValue("prodAnnotaion"); // 생산 주석 (Input 컨트롤)
+                console.log("MfgOrderPlannedStartDate",MfgOrderPlannedStartDate);
+                this.MfgOrderPlannedStartDate = MfgOrderPlannedStartDate;
 
             // 데이터 유효성 검사 (예시: 필수 입력값 체크)
-            if (!oData.Material || !oData.ProductionPlant || !oData.ProductionVersion || !oData.ManufacturingOrderType || !oData.TotalQuantity || !oData.MfgOrderPlannedStartDate) {
+            if (!Material || !ProductionPlant || !ProductionVersion || !ManufacturingOrderType || !TotalQuantity || !MfgOrderPlannedStartDate) {
                 MessageBox.error("필수 값을 입력해주세요.");
                 return;
 
-            } else if (oData.TotalQuantity <= 0) {
+            } else if (parseFloat(TotalQuantity <= 0)) {
                 MessageBox.error("작업지시 수량은 0보다 커야합니다.");
                 return;
-            } else if (parseFloat(oData.TotalQuantity) <= parseFloat(lotSize)) {
+            } else if (parseFloat(TotalQuantity) <= parseFloat(lotSize)) {
                 MessageBox.error("로트 사이즈는 작업지시 수량과 같거나 작아야합니다.");
                 return;
-            } else if (parseFloat(lotSize) < 0 || !lotSize || lotSize === "" || parseFloat(lotSize)=== 0 || parseFloat(lotSize) === "0" | parseFloat(lotSize) === "") {
-                MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야합니다.");
+            } else if (parseFloat(lotSize) <= 0 ) {
+                MessageBox.error("로트 사이즈는 0 보다 커야합니다.");
                 return;
+            } else if ( lotSize === ""){ // 로트 사이즈가 없을 때 작업지시 수량 넣기
+                lotSize = parseFloat(TotalQuantity);
+                console.log("lotsizetest",lotSize);
             }
             
-            if (lotSize && lotSize >= 0) {
+            if (lotSize && lotSize > 0) {
             
-                var sMfgQty = parseFloat(oData.TotalQuantity); // 작업수량
-                var calMfgQty =  Math.floor(sMfgQty / lotSize);
-                var remainderQty = sMfgQty % lotSize;
-                var oDataArray = [];
-                console.log("dd", calMfgQty +" "+  remainderQty);
-                // 로트 사이즈로 나누어진 작업지시 데이터 생성
-                for (var i = 0; i < calMfgQty; i++) {
-                    oDataArray.push({
+                var numOrders =  Math.floor(TotalQuantity / lotSize);
+                var remainderQty = TotalQuantity % lotSize;
+                console.log("dd", numOrders +" "+  remainderQty);
+                // 작업 지시 데이터 생성 함수
+                var createOrderData = function(qty) {
+                    return {
                         MfgOrderType: "2",
-                        ManufacturingOrderType: oData.ManufacturingOrderType, // 오더 유형
-                        Material: oData.Material, // 제품
-                        ProductionPlant: oData.ProductionPlant, // 플랜트
-                        MfgOrderPlannedTotalQty: lotSize, // 작업 수량
-                        ProductionVersion: oData.ProductionVersion, // 생산 버전
-                        MfgOrderPlannedStartDate: oData.MfgOrderPlannedStartDate, // 기본 시작일
-                        Yy1ProdRankOrd: oData.YY1_PROD_RANK_ORD, // 생산 순위
-                        Yy1PrioRankOrd: oData.YY1_PRIO_RANK_ORD,// 우선 순위
-                        Yy1ProdText: oData.YY1_PROD_TEXT_ORD
-                    });
+                        ManufacturingOrderType: ManufacturingOrderType, // 오더 유형
+                        Material: Material, // 제품
+                        ProductionPlant: ProductionPlant, // 플랜트
+                        MfgOrderPlannedTotalQty: qty.toString(), // 작업 수량
+                        ProductionVersion: ProductionVersion, // 생산 버전
+                        MfgOrderPlannedStartDate: MfgOrderPlannedStartDate, // 기본 시작일
+                        Yy1ProdRankOrd: YY1_PROD_RANK_ORD, // 생산 순위
+                        Yy1PrioRankOrd: YY1_PRIO_RANK_ORD,// 우선 순위
+                        Yy1ProdText: YY1_PROD_TEXT_ORD
+                    };
+                };
+                 // 작업 지시 데이터를 담을 배열
+                var oDataArray = [];
+                this.oDataArray = oDataArray;
+                for (var i = 0; i < numOrders; i++) {
+                    this.oDataArray.push(createOrderData(lotSize)); // 로트 사이즈에 맞춰 작업 지시 데이터 추가
+                }
+                if (remainderQty > 0) {
+                    this.oDataArray.push(createOrderData(remainderQty.toString())); // 나머지 수량에 대한 작업 지시 데이터 추가
                 }
 
-                // 나머지 수량이 있는 경우 추가 작업지시 데이터 생성
-                if (remainderQty > 0) {
-                    oDataArray.push({
-                        MfgOrderType: "2",
-                        ManufacturingOrderType: oData.ManufacturingOrderType, // 오더 유형
-                        Material: oData.Material, // 제품
-                        ProductionPlant: oData.ProductionPlant, // 플랜트
-                        MfgOrderPlannedTotalQty: remainderQty.toString(), // 작업 수량
-                        ProductionVersion: oData.ProductionVersion, // 생산 버전
-                        MfgOrderPlannedStartDate: oData.MfgOrderPlannedStartDate, // 기본 시작일
-                        Yy1ProdRankOrd: oData.YY1_PROD_RANK_ORD, // 생산 순위
-                        Yy1PrioRankOrd: oData.YY1_PRIO_RANK_ORD,// 우선 순위
-                        Yy1ProdText: oData.YY1_PROD_TEXT_ORD
-                    });
+                console.log("datata",oDataArray);
+                // 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
+                function toDateFormat(dateString) {
+                    var date = new Date(dateString);
+                    if (isNaN(date.getTime())) {
+                        throw new Error('Invalid date format');
+                    }
+                    // 날짜를 YYYY-MM-DD 형식으로 변환
+                    var formattedDate = date.toISOString().split('T')[0];
+                    // T00:00:00을 붙여서 전체 포맷을 YYYY-MM-DDT00:00:00으로 설정
+                    return `${formattedDate}T00:00:00`;
                 }
+
+                // var postArray = this.oDataArray.map(function(data){
+                //     return {
+
+                //         ManufacturingOrderType: data.ManufacturingOrderType || "",
+                //         Material: data.Material || "",
+                //         MfgOrderPlannedStartDate: toDateFormat(data.MfgOrderPlannedStartDate) || "",
+                //         ProductionVersion: data.ProductionVersion || "",
+                //         SalesOrder: data.SalesOrder || "",
+                //         SalesOrderItem: data.SalesOrderItem || "",
+                //         ProductionPlant: data.ProductionPlant || "",
+                //         TotalQuantity: parseFloat(data.MfgOrderPlannedTotalQty || "0").toFixed(3),
+                //         YY1_PROD_RANK_ORD: data.Yy1ProdRankOrd || "",
+                //         YY1_PRIO_RANK_ORD: data.Yy1PrioRankOrd || "",
+                //         YY1_PROD_TEXT_ORD: data.Yy1ProdText || ""
+    
+                //         // SalesOrder : "",
+                //         // SalesOrderItem : "",
+                //         // Material : "FG228",
+                //         // ProductionPlant : "4310",
+                //         // ManufacturingOrderType : "DN01",
+                //         // ProductionVersion : "0001",
+                //         // TotalQuantity : "1",
+                //         // MfgOrderPlannedStartDate : "2024-01-20T00:00:00",
+                //         // YY1_PROD_RANK_ORD : "101",
+                //         // YY1_PRIO_RANK_ORD : "000000000000000014",
+                //         // YY1_PROD_TEXT_ORD : "납기준수"
+                //     };
+                // });
+
                  // OData 모델을 사용하여 데이터 저장
                  var promises = oDataArray.map(function(data) {
+                    console.log('data',data);
                     return this._getODataCreate(oMainModel, "/ProdOrder", data);
                 }.bind(this));
 
                 // 모든 데이터 저장 시 성공/실패 처리
                 Promise.all(promises).then(function() {
                     MessageBox.success("작업 지시 생성에 성공하였습니다.");
+                    
                 }.bind(this)).catch(function() {
                     MessageBox.error("작업 지시 생성에 실패하였습니다.");
                 }.bind(this));
+                this.setModelData();
                 this.navTo("Main", {});
             } else {
                 MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야합니다.");

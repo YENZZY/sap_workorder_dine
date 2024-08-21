@@ -807,7 +807,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         onSave: function () {
 
             // 로트 사이즈 값 가져오기
-            var lotSize = this.byId("lotSize").getValue() || "0";
+            var lotSize = this.byId("lotSize").getValue();
             console.log("lotsize",lotSize);
             // 입력 값을 가져오는 함수
             var getInputValue = function(id, defaultValue) {
@@ -839,6 +839,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var prodText = getValue("prodAnnotaion"); // 생산 주석
             console.log("mfgOrderPlannedStartDate",mfgOrderPlannedStartDate);
             this.mfgOrderPlannedStartDate = mfgOrderPlannedStartDate;
+            
             // 필수 입력값 검증
             if (!sSalesOrder || !sSalesOrderItem || !productionVersion || !manufacturingOrderType || isNaN(totalQuantity) || !mfgOrderPlannedStartDate) {
                 MessageBox.error("필수 값을 입력해주세요."); // 필수 값이 입력되지 않았을 때 오류 메시지 표시
@@ -850,9 +851,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 MessageBox.error("로트 사이즈는 작업지시 수량과 같거나 작아야합니다.");
                 return;
 
-            } else if (parseFloat(lotSize) < 0 || !lotSize || lotSize === "" || parseFloat(lotSize)=== 0 || parseFloat(lotSize) === "0" | parseFloat(lotSize) === "") {
-                MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야합니다.");
+            } else if (parseFloat(lotSize) <= 0 ) {
+                MessageBox.error("로트 사이즈는 0 보다 커야합니다.");
                 return;
+            } else if ( lotSize === ""){ // 로트 사이즈가 없을 때 작업지시 수량 넣기
+                lotSize = parseFloat(totalQuantity);
             }
 
             // 데이터 모델에서 판매 문서 수량 가져오기
@@ -916,12 +919,12 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             // 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
             function toDateFormat(dateString) {
-                let date = new Date(dateString);
+                var date = new Date(dateString);
                 if (isNaN(date.getTime())) {
                     throw new Error('Invalid date format');
                 }
                 // 날짜를 YYYY-MM-DD 형식으로 변환
-                let formattedDate = date.toISOString().split('T')[0];
+                var formattedDate = date.toISOString().split('T')[0];
                 // T00:00:00을 붙여서 전체 포맷을 YYYY-MM-DDT00:00:00으로 설정
                 return `${formattedDate}T00:00:00`;
             }
@@ -937,7 +940,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     SalesOrder: data.SalesOrder || "",
                     SalesOrderItem: data.SalesOrderItem || "",
                     ProductionPlant: data.ProductionPlant || "",
-                    TotalQuantity: parseFloat(data.MfgOrderPlannedTotalQty || "0").toFixed(3),
+                    TotalQuantity: parseFloat(data.MfgOrderPlannedTotalQty || "").toFixed(3),
                     YY1_PROD_RANK_ORD: data.Yy1ProdRankOrd || "",
                     YY1_PRIO_RANK_ORD: data.Yy1PrioRankOrd || "",
                     YY1_PROD_TEXT_ORD: data.Yy1ProdText || ""

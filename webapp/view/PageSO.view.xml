@@ -134,7 +134,7 @@
                     </VBox>
                     <VBox>
                         <Label text="로트 사이즈"/>
-                        <Input id="lotSize" type="Text" width="15em" value="0"/>
+                        <Input id="lotSize" type="Text" width="15em"/>
                     </VBox>
                 </HBox>
                 <HBox class="sapUiMediumMarginBottom">
