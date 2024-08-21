@@ -956,12 +956,14 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             // POST 요청을 보내는 함수 호출
             postArray.map(function(data) {
+                this.saveData = data;
                 return this.postProductionOrder(data);
             }.bind(this));
             },
         
             // POST 요청을 보내는 함수
             postProductionOrder: function(data) {
+                console.log("data",data);
                 return this.getCSRFToken().then(function(csrfToken) {
                     console.log("token",csrfToken);
                     return $.ajax({
@@ -1023,8 +1025,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             },
 
         // 오류 시 처리 함수
-        handleError: function(reject, status, responseText) {
-            console.log("reject",reject);
+        handleError: function(reject) {
+            console.log("data",this.saveData);
             // 메인 모델 가져오기
             var oMainModel = this.getOwnerComponent().getModel("mainData");
             var error = "";
@@ -1035,10 +1037,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 error = "오류 메시지를 추출하는 데 문제가 발생했습니다.";
             }
             // 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
-            var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. 상태: " + status + ", 오류 메시지: " + error;
+            var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. " + "에러 메시지: " + error;
             console.log("erromsg",errorMessage);
-            console.log("reject:", reject.d);
-            var dataArray = reject.d;
+           
+            var dataArray = this.saveData;
             var updatedOData =  {
                     Status: "2", // 에러
                     ManufacturingOrder: "", // 생산 오더
