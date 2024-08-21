@@ -689,7 +689,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         // 저장
         onSave: function () {
             var oMainModel = this.getOwnerComponent().getModel("mainData");
-            var lotSize = this.byId("lotSize").getValue();
+            var lotSize = this.byId("lotSize").getValue() || "0";
             var oData = {
                 ManufacturingOrderType: this.byId("mfgOrderType").getSelectedKey(), // 오더 유형
                 Material: this.byId("materialVH").getTokens().map(function(token) { return token.getKey(); })[0] || "", // 제품
@@ -708,13 +708,17 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 MessageBox.error("필수 값을 입력해주세요.");
                 return;
 
-            } else if (oData.TotalQuantity < 0) {
+            } else if (oData.TotalQuantity <= 0) {
                 MessageBox.error("작업지시 수량은 0보다 커야합니다.");
                 return;
-            } else if (parseFloat(oData.TotalQuantity) < parseFloat(lotSize)) {
-                MessageBox.error("로트 사이즈는 작업지시 수량보다 작아야합니다.");
+            } else if (parseFloat(oData.TotalQuantity) <= parseFloat(lotSize)) {
+                MessageBox.error("로트 사이즈는 작업지시 수량과 같거나 작아야합니다.");
+                return;
+            } else if (parseFloat(lotSize) < 0 || !lotSize || lotSize === "" || parseFloat(lotSize)=== 0 || parseFloat(lotSize) === "0" | parseFloat(lotSize) === "") {
+                MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야합니다.");
                 return;
             }
+            
             if (lotSize && lotSize >= 0) {
             
                 var sMfgQty = parseFloat(oData.TotalQuantity); // 작업수량
