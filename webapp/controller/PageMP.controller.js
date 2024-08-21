@@ -770,14 +770,23 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 console.log("datata",oDataArray);
                 // 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
                 function toDateFormat(dateString) {
+                    // Date 객체를 생성
                     var date = new Date(dateString);
-                    if (isNaN(date.getTime())) {
-                        throw new Error('날짜 형식과 맞지 않습니다.');
-                    }
-                    // 날짜를 YYYY-MM-DD 형식으로 변환
-                    var formattedDate = date.toISOString().split('T')[0];
-                    // T00:00:00을 붙여서 전체 포맷을 YYYY-MM-DDT00:00:00으로 설정
-                    return `${formattedDate}T00:00:00`;
+
+                    // 날짜와 시간을 형식화
+                    var formattedDate = [
+                        date.getFullYear(),
+                        ('0' + (date.getMonth() + 1)).slice(-2), // 월은 0부터 시작
+                        ('0' + date.getDate()).slice(-2)
+                    ].join('-');
+
+                    var formattedTime = [
+                        ('0' + date.getHours()).slice(-2),
+                        ('0' + date.getMinutes()).slice(-2),
+                        ('0' + date.getSeconds()).slice(-2)
+                    ].join(':');
+
+                    return formattedDate + 'T' + formattedTime;
                 }
 
                 var postArray = this.oDataArray.map(function(data){

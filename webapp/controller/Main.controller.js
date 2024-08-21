@@ -276,17 +276,26 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					});
 					
 					console.log("SaveProdOrder:", saveProdOrder);
-
+					this.saveProdOrder = saveProdOrder;
 					// 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
 					function toDateFormat(dateString) {
+						// Date 객체를 생성
 						var date = new Date(dateString);
-						if (isNaN(date.getTime())) {
-							throw new Error('날짜 형식과 맞지 않습니다.');
-						}
-						// 날짜를 YYYY-MM-DD 형식으로 변환
-						var formattedDate = date.toISOString().split('T')[0];
-						// T00:00:00을 붙여서 전체 포맷을 YYYY-MM-DDT00:00:00으로 설정
-						return `${formattedDate}T00:00:00`;
+
+						// 날짜와 시간을 형식화
+						var formattedDate = [
+							date.getFullYear(),
+							('0' + (date.getMonth() + 1)).slice(-2), // 월은 0부터 시작
+							('0' + date.getDate()).slice(-2)
+						].join('-');
+
+						var formattedTime = [
+							('0' + date.getHours()).slice(-2),
+							('0' + date.getMinutes()).slice(-2),
+							('0' + date.getSeconds()).slice(-2)
+						].join(':');
+
+						return formattedDate + 'T' + formattedTime;
 					}
 					
 					var postArray = saveProdOrder.map(function(data){
@@ -327,14 +336,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
                 this.csrfToken = token; // CSRF 토큰 저장
                 console.log("token", this.csrfToken);
                 
-                this.saveData = postArray;
                 // POST 요청을 보내는 함수 호출
-                var postPromises = postArray.map(function(data) {  
+                var postPromises = postArray.map(function(data,index) {  
                 
-                console.log("parr",this.saveData);
-
-                    console.log(".saveDataTotalQuantity", this.saveData.TotalQuantity);
-                    return this.postProductionOrder(data); // 각 요청에 대한 Promise 반환
+                    return this.postProductionOrder(data,index); // 각 요청에 대한 Promise 반환
                 }.bind(this)); // `this` 바인딩
         
                 // 모든 POST 요청이 완료될 때까지 대기
@@ -362,9 +367,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			}
 		},		
         
-		postProductionOrder: function(data) {
-			console.log("data", data);
-		
+		postProductionOrder: function(data,index) {
+			console.log("data", data,index);
+			
 			// `$.ajax`를 `Promise`로 래핑
 			return new Promise(function(resolve, reject) {
 				$.ajax({
@@ -373,12 +378,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					data: JSON.stringify(data),
 					dataType: "json",
 					contentType: "application/json",
+					async:"false",
 					headers: {
 						"X-CSRF-Token": this.csrfToken
 					},
 					success: function(response) {
 						try {
-							this.handleSuccess(response); // `this`를 바인딩하여 콜백 함수에 전달
+							this.handleSuccess(response,index); // `this`를 바인딩하여 콜백 함수에 전달
 							resolve(); // 성공 시 Promise 해결
 						} catch (error) {
 							reject(error); // `handleSuccess`에서 오류가 발생한 경우
@@ -386,7 +392,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					}.bind(this), // `this` 바인딩
 					error: function(xhr) {
 						try {
-							this.handleError(xhr); // `this`를 바인딩하여 콜백 함수에 전달
+							this.handleError(xhr, data, index); // `this`를 바인딩하여 콜백 함수에 전달
 							reject(xhr); // 실패 시 Promise 거부
 						} catch (error) {
 							reject(error); // `handleError`에서 오류가 발생한 경우
@@ -397,7 +403,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		},
 			
 		// 성공 시 처리 함수 (예: 화면 업데이트)
-		handleSuccess: function(response) {
+		handleSuccess: function(response,index) {
+			var dates = this.saveProdOrder[index].MfgOrderPlannedStartDate;
 			var oMainModel = this.getOwnerComponent().getModel("mainData");
 			console.log("Response:", response.d);
 			var dataArray = response.d;
@@ -412,7 +419,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				ProductionPlant: dataArray.ProductionPlant,
 				MfgOrderPlannedTotalQty: dataArray.TotalQuantity,
 				ProductionVersion: dataArray.ProductionVersion,
-				//MfgOrderPlannedStartDate: this.startDate,
+				MfgOrderPlannedStartDate: dates,
 				Yy1ProdRankOrd: dataArray.YY1_PROD_RANK_ORD,
 				Yy1PrioRankOrd: dataArray.YY1_PRIO_RANK_ORD,
 				Yy1ProdText: dataArray.YY1_PROD_TEXT_ORD,
@@ -433,13 +440,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		},
 
 		// 오류 시 처리 함수
-		handleError: function(xhr) {
-			console.log("data2", this.saveData);
-
+		handleError: function(xhr,requestData, index) {
+			var dates = this.saveProdOrder[index].MfgOrderPlannedStartDate;
 			// 메인 모델 가져오기
 			var oMainModel = this.getOwnerComponent().getModel("mainData");
 			var error = "";
-			this.saveData.map(function(errorData){
 			try {
 				error = xhr.responseJSON.error.message.value;
 			} catch (e) {
@@ -448,23 +453,21 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			// 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
 			var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. " + "에러 메시지: " + error;
 			console.log("erromsg", errorMessage);
-
-			console.log("에러 데이터",errorData.TotalQuantity);
 			var updatedOData = {
 				Status: "2", // 에러
 				ManufacturingOrder: "", // 생산 오더
-				MfgOrderType: errorData.SalesOrder && errorData.SalesOrderItem ? "1" : "2", // 수주 : 양산
-				SalesOrder: errorData.SalesOrder,
-				SalesOrderItem: errorData.SalesOrderItem,
-				ManufacturingOrderType: errorData.ManufacturingOrderType,
-				Material: errorData.Material,
-				ProductionPlant: errorData.ProductionPlant,
-				MfgOrderPlannedTotalQty: errorData.TotalQuantity,
-				ProductionVersion: errorData.ProductionVersion,
-				//MfgOrderPlannedStartDate: this.startDate,
-				Yy1ProdRankOrd: errorData.YY1_PROD_RANK_ORD,
-				Yy1PrioRankOrd: errorData.YY1_PRIO_RANK_ORD,
-				Yy1ProdText: errorData.YY1_PROD_TEXT_ORD,
+				MfgOrderType: requestData.SalesOrder && requestData.SalesOrderItem ? "1" : "2", // 수주 : 양산
+				SalesOrder: requestData.SalesOrder,
+				SalesOrderItem: requestData.SalesOrderItem,
+				ManufacturingOrderType: requestData.ManufacturingOrderType,
+				Material: requestData.Material,
+				ProductionPlant: requestData.ProductionPlant,
+				MfgOrderPlannedTotalQty: requestData.TotalQuantity,
+				ProductionVersion: requestData.ProductionVersion,
+				MfgOrderPlannedStartDate: dates,
+				Yy1ProdRankOrd: requestData.YY1_PROD_RANK_ORD,
+				Yy1PrioRankOrd: requestData.YY1_PRIO_RANK_ORD,
+				Yy1ProdText: requestData.YY1_PROD_TEXT_ORD,
 				Message: errorMessage
 			};
 			console.log("변환된 값",updatedOData.MfgOrderPlannedTotalQty);
@@ -479,7 +482,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					// Error callback
 					this._getData();
 				}.bind(this)); // `this` 바인딩
-			}.bind(this));
 		},
 
 		// CSRF 토큰을 가져오는 함수
