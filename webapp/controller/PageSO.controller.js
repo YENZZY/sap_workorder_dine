@@ -838,6 +838,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var prioRankOrd = getInputValue("schedPriVH"); // 우선 순위
             var prodText = getValue("prodAnnotaion"); // 생산 주석
             console.log("mfgOrderPlannedStartDate",mfgOrderPlannedStartDate);
+            this.mfgOrderPlannedStartDate = mfgOrderPlannedStartDate;
             // 필수 입력값 검증
             if (!sSalesOrder || !sSalesOrderItem || !productionVersion || !manufacturingOrderType || isNaN(totalQuantity) || !mfgOrderPlannedStartDate) {
                 MessageBox.error("필수 값을 입력해주세요."); // 필수 값이 입력되지 않았을 때 오류 메시지 표시
@@ -916,7 +917,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     throw new Error('Invalid date format');
                 }
                 // 날짜를 YYYY-MM-DD 형식으로 변환
-                let formattedDate = date.toISOString();
+                let formattedDate = date.toISOString().split('T')[0];
                 // T00:00:00을 붙여서 전체 포맷을 YYYY-MM-DDT00:00:00으로 설정
                 return `${formattedDate}T00:00:00`;
             }
@@ -953,193 +954,122 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             console.log("postArray", postArray); // 디버깅을 위한 로그 출력
 
-             // POST 요청을 보내는 함수 호출
-            var promises = postArray.map(function(data) {
+            // POST 요청을 보내는 함수 호출
+            postArray.map(function(data) {
                 return this.postProductionOrder(data);
             }.bind(this));
+            },
+        
+            // POST 요청을 보내는 함수
+            postProductionOrder: function(data) {
+                return this.getCSRFToken().then(function(csrfToken) {
+                    console.log("token",csrfToken);
+                    return $.ajax({
+                        url: "/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2",
+                        type: "POST",
+                        async:false,
+                        data: JSON.stringify(data),
+                        dataType:"json",
+                        contentType: "application/json",
+                        headers: {
+                            "X-CSRF-Token": csrfToken
+                        },
+                        success: this.handleSuccess.bind(this), // `this`를 바인딩하여 콜백 함수에 전달
+                        error: this.handleError.bind(this) // `this`를 바인딩하여 콜백 함수에 전달
+                    });
+                }.bind(this)) // CSRF 토큰 요청 내에서 `this`를 바인딩
+                .catch(function(err) {
+                    // CSRF 토큰 요청 실패 시 처리
+                    console.error("Error fetching CSRF Token:", err);
+                });
+            },
 
-            // 모든 요청 완료 후 성공 또는 실패 처리
-            Promise.allSettled(promises).then(function(results) {
+            // 성공 시 처리 함수 (예: 화면 업데이트)
+            handleSuccess: function(response) {
                 var oMainModel = this.getOwnerComponent().getModel("mainData");
-
-                // 성공 및 실패 결과를 처리
-                var updatedODataArray = results.map(function(result, index) {
-                    var baseData = postArray[index];
-                    console.log("baos",baseData);
-                    if (result.status === "fulfilled") {
-                        console.log("restat",result.status);
-                        // 성공한 경우
-                        var parser = new DOMParser();
-                        var xmlDoc = parser.parseFromString(result.value, "application/xml");
-                        var manufacturingOrderElement = xmlDoc.querySelector("ManufacturingOrder");
-                        var manufacturingOrder = manufacturingOrderElement ? manufacturingOrderElement.textContent : "";
-
-                        return {
-                            Status: "1", // 성공
-                            ManufacturingOrder: manufacturingOrder, // 생산 오더
-                            MfgOrderType:"1", // 수주
-                            SalesOrder: baseData.SalesOrder,
-                            SalesOrderItem: baseData.SalesOrderItem,
-                            ManufacturingOrderType: baseData.ManufacturingOrderType,
-                            Material: baseData.Material,
-                            ProductionPlant: baseData.ProductionPlant,
-                            MfgOrderPlannedTotalQty: (baseData.TotalQuantity).toString(),
-                            ProductionVersion: baseData.ProductionVersion,
-                            MfgOrderPlannedStartDate: mfgOrderPlannedStartDate,
-                            Yy1ProdRankOrd: baseData.YY1_PROD_RANK_ORD,
-                            Yy1PrioRankOrd: baseData.YY1_PRIO_RANK_ORD,
-                            Yy1ProdText: baseData.YY1_PROD_TEXT_ORD,
-                            Message:""
-                        };
-                    } else {
-                        // 실패한 경우
-                        return {
-                            Status: '2', // 에러
-                            MfgOrderType:"1", // 수주
-                            ManufacturingOrder: "",
-                            SalesOrder: baseData.SalesOrder,
-                            SalesOrderItem: baseData.SalesOrderItem,
-                            ManufacturingOrderType: baseData.ManufacturingOrderType,
-                            Material: baseData.Material,
-                            ProductionPlant: baseData.ProductionPlant,
-                            MfgOrderPlannedTotalQty: (baseData.TotalQuantity).toString(),
-                            ProductionVersion: baseData.ProductionVersion,
-                            MfgOrderPlannedStartDate: mfgOrderPlannedStartDate,
-                            Yy1ProdRankOrd: baseData.YY1_PROD_RANK_ORD,
-                            Yy1PrioRankOrd: baseData.YY1_PRIO_RANK_ORD,
-                            Yy1ProdText: baseData.YY1_PROD_TEXT_ORD,
-                            Message: "작업 지시 생성 중 오류가 발생했습니다."
-                        };
-                    }
-                });
-
-                console.log("업데이트 값:", updatedODataArray);
-
-                // OData에 데이터 생성
-                var createPromises = updatedODataArray.map(function(data) {
-                    return new Promise(function(resolve, reject) {
-                        oMainModel.create("/ProdOrder", data, {
-                            success: function() {
-                                resolve();
-                            },
-                            error: function(oError) {
-                                reject(oError);
-                            }
-                        });
-                    });
-                });
-
-                // 모든 OData 생성 요청 완료 후 성공 또는 실패 처리
-                Promise.allSettled(createPromises).then(function(results) {
-                    var allSucceeded = results.every(function(result) {
-                        return result.status === "fulfilled";
-                    });
-
-                    if (allSucceeded) {
-                        MessageBox.success("작업 지시 생성이 완료되었습니다.");
-                        this.navTo("Main", {});
-                    } else {
-                        MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
-                    }
-                }.bind(this)).catch(function(err) {
-                    console.error("Error in creating production orders:", err);
+                console.log("Response:", response.d);
+                var dataArray = response.d;
+                var updatedOData =  {
+                        Status: "1", // 생성
+                        ManufacturingOrder: dataArray.ManufacturingOrder, // 생산 오더
+                        MfgOrderType: "1", // 수주
+                        SalesOrder: dataArray.SalesOrder,
+                        SalesOrderItem: dataArray.SalesOrderItem,
+                        ManufacturingOrderType: dataArray.ManufacturingOrderType,
+                        Material: dataArray.Material,
+                        ProductionPlant: dataArray.ProductionPlant,
+                        MfgOrderPlannedTotalQty: dataArray.TotalQuantity,
+                        ProductionVersion: dataArray.ProductionVersion,
+                        MfgOrderPlannedStartDate: this.mfgOrderPlannedStartDate,
+                        Yy1ProdRankOrd: dataArray.YY1_PROD_RANK_ORD,
+                        Yy1PrioRankOrd: dataArray.YY1_PRIO_RANK_ORD,
+                        Yy1ProdText: dataArray.YY1_PROD_TEXT_ORD,
+                        Message: ""
+                    };
+            
+                console.log("업데이트 값:", updatedOData);
+            
+                this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
+                .done(function() {
+                    // Success callback
+                    MessageBox.success("작업 지시 생성이 완료되었습니다.");
+                    this.setModelData();
+                    this.navTo("Main", {});
+                }.bind(this))
+                .fail(function() {
+                    // Error callback
                     MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
                 }.bind(this));
-            }.bind(this)).catch(function(err) {
-                console.error("Error in processing production orders:", err);
-                MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
-            }.bind(this));
-        },
-        
-        // POST 요청을 보내는 함수
-        postProductionOrder: function(data) {
-            return this.getCSRFToken().then(function(csrfToken) {
-                console.log("token",csrfToken);
-                return $.ajax({
-                    url: "/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2",
-                    type: "POST",
-                    data: JSON.stringify(data),
-                    contentType: "application/json",
-                    headers: {
-                        "X-CSRF-Token": csrfToken
-                    },
-                    // success: this.handleSuccess.bind(this), // `this`를 바인딩하여 콜백 함수에 전달
-                    // error: this.handleError.bind(this) // `this`를 바인딩하여 콜백 함수에 전달
-                });
-            }.bind(this)) // CSRF 토큰 요청 내에서 `this`를 바인딩
-            .catch(function(err) {
-                // CSRF 토큰 요청 실패 시 처리
-                console.error("Error fetching CSRF Token:", err);
-            });
-        },
-
-        // 성공 시 처리 함수 (예: 화면 업데이트)
-        handleSuccess: function(response) {
-            // 메인 모델 가져오기
-            var oMainModel = this.getOwnerComponent().getModel("mainData");
-            console.log("Response:", response);
-
-            // XML 응답에서 <d:ManufacturingOrder> 값 추출
-            var parser = new DOMParser();
-            var xmlDoc = parser.parseFromString(response, "application/xml");
-
-            var manufacturingOrderElement = xmlDoc.querySelector("d\\:ManufacturingOrder");
-            var manufacturingOrder = manufacturingOrderElement ? manufacturingOrderElement.textContent : null;
-            
-            var updatedOData = {
-            Status: '1', // 생성
-            ManufacturingOrder: manufacturingOrder, // 생산 오더
-            MfgOrderType:"1", // 수주
-            SalesOrder: sSalesOrder,
-            SalesOrderItem: sSalesOrderItem,
-            ManufacturingOrderType: manufacturingOrderType,
-            Material: material,
-            ProductionPlant: productionPlant,
-            MfgOrderPlannedTotalQty: qty,
-            ProductionVersion: productionVersion,
-            MfgOrderPlannedStartDate: mfgOrderPlannedStartDate,
-            Yy1ProdRankOrd: prodRankOrd,
-            Yy1PrioRankOrd: prioRankOrd,
-            Yy1ProdText: prodText
-            };
-        
-            console.log("업데이트 값:", updatedOData);
-
-            this._getOdataCreate(oMainModel,"/ProdOrder",updatedOData).done(function(){
-
-            }.bind(this));
-
-        },
+            },
 
         // 오류 시 처리 함수
-        handleError: function(xhr, status, error) {
+        handleError: function(reject, status, responseText) {
+            console.log("reject",reject);
             // 메인 모델 가져오기
             var oMainModel = this.getOwnerComponent().getModel("mainData");
-
+            var error = "";
+            try {
+                error = reject.responseJSON.error.message.value;
+            } catch (e) {
+                console.error("error:", e);
+                error = "오류 메시지를 추출하는 데 문제가 발생했습니다.";
+            }
             // 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
             var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. 상태: " + status + ", 오류 메시지: " + error;
-
-            // oDataArray를 업데이트하여 오류 상태와 메시지를 추가
-            var updatedOData = this.oDataArray.map(function(data) {
-                return {
-                    ...data,
-                    Status: '2', // 에러 상태 코드
-                    Message: errorMessage // 에러 메시지
+            console.log("erromsg",errorMessage);
+            console.log("reject:", reject.d);
+            var dataArray = reject.d;
+            var updatedOData =  {
+                    Status: "2", // 에러
+                    ManufacturingOrder: "", // 생산 오더
+                    MfgOrderType: "1", // 수주
+                    SalesOrder: dataArray.SalesOrder,
+                    SalesOrderItem: dataArray.SalesOrderItem,
+                    ManufacturingOrderType: dataArray.ManufacturingOrderType,
+                    Material: dataArray.Material,
+                    ProductionPlant: dataArray.ProductionPlant,
+                    MfgOrderPlannedTotalQty: dataArray.TotalQuantity,
+                    ProductionVersion: dataArray.ProductionVersion,
+                    MfgOrderPlannedStartDate: this.mfgOrderPlannedStartDate,
+                    Yy1ProdRankOrd: dataArray.YY1_PROD_RANK_ORD,
+                    Yy1PrioRankOrd: dataArray.YY1_PRIO_RANK_ORD,
+                    Yy1ProdText: dataArray.YY1_PROD_TEXT_ORD,
+                    Message: errorMessage
                 };
-            });
-
-            console.log("업데이트 값:", updatedOData); // 디버깅을 위한 로그 출력
-
-            // 업데이트된 oData를 서버에 다시 전송
-            this._getOdataCreate(oMainModel, "/ProdOrder", updatedOData)
-                .done(function() {
-                    // 성공적으로 처리한 후의 로직 (필요 시 추가)
-                }.bind(this))
-                .fail(function(jqXHR, textStatus, errorThrown) {
-                    // 서버에 데이터를 전송할 때 발생할 수 있는 오류 처리
-                    console.error("업데이트 실패:", textStatus, errorThrown);
-                    MessageBox.error("작업 지시 업데이트 중 오류가 발생했습니다.");
-                });
+        
+            console.log("업데이트 값:", updatedOData);
+        
+            this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
+            .done(function() {
+                // Success callback
+                MessageBox.success("작업 지시 생성이 완료되었습니다.");
+                this.setModelData();
+                this.navTo("Main", {});
+            }.bind(this))
+            .fail(function() {
+                // Error callback
+                MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
+            }.bind(this));
         },
 
         // CSRF 토큰을 가져오는 함수
