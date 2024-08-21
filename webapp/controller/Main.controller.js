@@ -139,8 +139,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 
 		onUpload: function (oEvent) {
 			var file = oEvent.getParameter("files")[0]; // 선택된 파일 가져오기
-			var oMainModel = this.getOwnerComponent().getModel("mainData");
-		
 			if (file && window.FileReader) {
 				var reader = new FileReader();
 		
@@ -185,6 +183,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						var filteredData = excelData.map(function (row) {
 							var date = row["기본 시작일"] || row["MfgOrderPlannedStartDate"];
 							var dates = excelDateToJSDate(parseFloat(date));
+							
 							console.log("row", row);
 							console.log("기본 시작일 값:", dates);
 							return {
@@ -205,8 +204,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		
 						saveProdOrder = saveProdOrder.concat(filteredData.flatMap(function (saveData) {
 							var orders = [];
-							var lotSize = saveData.LotSize ? parseFloat(saveData.LotSize) : 0;
-							console.log("ls",saveData.LotSize);
+							var lotSize = saveData.LotSize ? parseFloat(saveData.LotSize) : parseFloat(saveData.TotalQuantity);
+							console.log("ls",lotSize);
 							var totalQuantity = parseFloat(saveData.TotalQuantity);
 							console.log("total",totalQuantity);
 							 // 값을 문자열로 변환하는 함수
@@ -275,24 +274,83 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 							return orders;
 						}));
 					});
-		
+					
 					console.log("SaveProdOrder:", saveProdOrder);
+
+					// 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
+					function toDateFormat(dateString) {
+						var date = new Date(dateString);
+						if (isNaN(date.getTime())) {
+							throw new Error('날짜 형식과 맞지 않습니다.');
+						}
+						// 날짜를 YYYY-MM-DD 형식으로 변환
+						var formattedDate = date.toISOString().split('T')[0];
+						// T00:00:00을 붙여서 전체 포맷을 YYYY-MM-DDT00:00:00으로 설정
+						return `${formattedDate}T00:00:00`;
+					}
+					
+					var postArray = saveProdOrder.map(function(data){
+						return {
+
+							ManufacturingOrderType: data.ManufacturingOrderType || "",
+							Material: data.Material || "",
+							MfgOrderPlannedStartDate: toDateFormat(data.MfgOrderPlannedStartDate) || "",
+							ProductionVersion: data.ProductionVersion || "",
+							SalesOrder: data.SalesOrder || "",
+							SalesOrderItem: data.SalesOrderItem || "",
+							ProductionPlant: data.ProductionPlant || "",
+							TotalQuantity: parseFloat(data.MfgOrderPlannedTotalQty || "").toFixed(3),
+							YY1_PROD_RANK_ORD: data.Yy1ProdRankOrd || "",
+							YY1_PRIO_RANK_ORD: data.Yy1PrioRankOrd || "",
+							YY1_PROD_TEXT_ORD: data.Yy1ProdText || ""
 		
-					// 데이터 저장 요청
-					var requests = saveProdOrder.map(function (odata) {
-						return this._getODataCreate(oMainModel, "/ProdOrder", odata);
-					}.bind(this));
-		
-						Promise.all(requests)
-						.then(function () {
-							MessageBox.success("엑셀 파일이 업로드 되었습니다.");
-						})
-						.catch(function (error) {
-							MessageBox.error("서버에 데이터를 저장하는 도중 오류가 발생했습니다: " + (error.message || "알 수 없는 오류"));
-						});
-						this._getData();
+							// SalesOrder : "5",
+							// SalesOrderItem : "0010",
+							// Material : "FG228",
+							// ProductionPlant : "4310",
+							// ManufacturingOrderType : "DN01",
+							// ProductionVersion : "0001",
+							// TotalQuantity : "1",
+							// MfgOrderPlannedStartDate : "2024-01-20T00:00:00",
+							// YY1_PROD_RANK_ORD : "101",
+							// YY1_PRIO_RANK_ORD : "000000000000000014",
+							// YY1_PROD_TEXT_ORD : "납기준수"
+						};
+					});
+
+					console.log("postArray", postArray); 
+
+            this.csrfToken = "";
+
+            // CSRF 토큰을 가져오는 함수 호출
+            this.getCSRFToken().then(function(token) {
+                this.csrfToken = token; // CSRF 토큰 저장
+                console.log("token", this.csrfToken);
+                
+                this.saveData = postArray;
+                // POST 요청을 보내는 함수 호출
+                var postPromises = postArray.map(function(data) {  
+                
+                console.log("parr",this.saveData);
+
+                    console.log(".saveDataTotalQuantity", this.saveData.TotalQuantity);
+                    return this.postProductionOrder(data); // 각 요청에 대한 Promise 반환
+                }.bind(this)); // `this` 바인딩
+        
+                // 모든 POST 요청이 완료될 때까지 대기
+                Promise.all(postPromises).then(function() {
+					console.log("모든 POST 요청 완료");
+					MessageBox.success("작업 지시 생성이 완료되었습니다.");
+					
+				}.bind(this)).catch(function(err) {
+					console.error("POST 요청 중 오류 발생:", err);
+					MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.")
+				}.bind(this));
+				}.bind(this)).catch(function(err) {
+					console.error("CSRF 토큰 요청 중 오류 발생:", err);});
 				}.bind(this);
-				// 파일 읽기 오류 시
+				
+					// 파일 읽기 오류 시
 				reader.onerror = function (e) {
 					MessageBox.error("파일을 읽는 도중 오류가 발생했습니다.");
 				}
@@ -303,6 +361,140 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				MessageBox.error("FileReader를 지원하지 않거나 파일이 선택되지 않았습니다.");
 			}
 		},		
+        
+		postProductionOrder: function(data) {
+			console.log("data", data);
+		
+			// `$.ajax`를 `Promise`로 래핑
+			return new Promise(function(resolve, reject) {
+				$.ajax({
+					url: "/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2",
+					type: "POST",
+					data: JSON.stringify(data),
+					dataType: "json",
+					contentType: "application/json",
+					headers: {
+						"X-CSRF-Token": this.csrfToken
+					},
+					success: function(response) {
+						try {
+							this.handleSuccess(response); // `this`를 바인딩하여 콜백 함수에 전달
+							resolve(); // 성공 시 Promise 해결
+						} catch (error) {
+							reject(error); // `handleSuccess`에서 오류가 발생한 경우
+						}
+					}.bind(this), // `this` 바인딩
+					error: function(xhr) {
+						try {
+							this.handleError(xhr); // `this`를 바인딩하여 콜백 함수에 전달
+							reject(xhr); // 실패 시 Promise 거부
+						} catch (error) {
+							reject(error); // `handleError`에서 오류가 발생한 경우
+						}
+					}.bind(this) // `this` 바인딩
+				});
+			}.bind(this));
+		},
+			
+		// 성공 시 처리 함수 (예: 화면 업데이트)
+		handleSuccess: function(response) {
+			var oMainModel = this.getOwnerComponent().getModel("mainData");
+			console.log("Response:", response.d);
+			var dataArray = response.d;
+			var updatedOData = {
+				Status: "1", // 생성
+				ManufacturingOrder: dataArray.ManufacturingOrder, // 생산 오더
+				MfgOrderType: dataArray.SalesOrder && dataArray.SalesOrderItem ? "1" : "2", // 수주 : 양산
+				SalesOrder: dataArray.SalesOrder,
+				SalesOrderItem: dataArray.SalesOrderItem,
+				ManufacturingOrderType: dataArray.ManufacturingOrderType,
+				Material: dataArray.Material,
+				ProductionPlant: dataArray.ProductionPlant,
+				MfgOrderPlannedTotalQty: dataArray.TotalQuantity,
+				ProductionVersion: dataArray.ProductionVersion,
+				//MfgOrderPlannedStartDate: this.startDate,
+				Yy1ProdRankOrd: dataArray.YY1_PROD_RANK_ORD,
+				Yy1PrioRankOrd: dataArray.YY1_PRIO_RANK_ORD,
+				Yy1ProdText: dataArray.YY1_PROD_TEXT_ORD,
+				Message: ""
+			};
+
+			console.log("업데이트 값:", updatedOData);
+
+			this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
+				.done(function() {
+					// Success callback
+					this._getData();
+				}.bind(this)) // `this` 바인딩
+				.fail(function() {
+					// Error callback
+					this._getData();
+				}.bind(this)); // `this` 바인딩
+		},
+
+		// 오류 시 처리 함수
+		handleError: function(xhr) {
+			console.log("data2", this.saveData);
+
+			// 메인 모델 가져오기
+			var oMainModel = this.getOwnerComponent().getModel("mainData");
+			var error = "";
+			this.saveData.map(function(errorData){
+			try {
+				error = xhr.responseJSON.error.message.value;
+			} catch (e) {
+				error = "오류 메시지를 추출하는 데 문제가 발생했습니다.";
+			}
+			// 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
+			var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. " + "에러 메시지: " + error;
+			console.log("erromsg", errorMessage);
+
+			console.log("에러 데이터",errorData.TotalQuantity);
+			var updatedOData = {
+				Status: "2", // 에러
+				ManufacturingOrder: "", // 생산 오더
+				MfgOrderType: errorData.SalesOrder && errorData.SalesOrderItem ? "1" : "2", // 수주 : 양산
+				SalesOrder: errorData.SalesOrder,
+				SalesOrderItem: errorData.SalesOrderItem,
+				ManufacturingOrderType: errorData.ManufacturingOrderType,
+				Material: errorData.Material,
+				ProductionPlant: errorData.ProductionPlant,
+				MfgOrderPlannedTotalQty: errorData.TotalQuantity,
+				ProductionVersion: errorData.ProductionVersion,
+				//MfgOrderPlannedStartDate: this.startDate,
+				Yy1ProdRankOrd: errorData.YY1_PROD_RANK_ORD,
+				Yy1PrioRankOrd: errorData.YY1_PRIO_RANK_ORD,
+				Yy1ProdText: errorData.YY1_PROD_TEXT_ORD,
+				Message: errorMessage
+			};
+			console.log("변환된 값",updatedOData.MfgOrderPlannedTotalQty);
+			console.log("업데이트 값:", updatedOData);
+
+			this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
+				.done(function() {
+					// Success callback
+					this._getData();
+				}.bind(this)) // `this` 바인딩
+				.fail(function() {
+					// Error callback
+					this._getData();
+				}.bind(this)); // `this` 바인딩
+			}.bind(this));
+		},
+
+		// CSRF 토큰을 가져오는 함수
+		getCSRFToken: function() {
+			return $.ajax({
+				url: "/sap/opu/odata/sap/API_PRODUCTION_ORDER_2_SRV/A_ProductionOrder_2",
+				type: "GET",
+				dataType: "json",
+				headers: {
+					"X-CSRF-Token": "Fetch"
+				}
+			}).then(function(data, textStatus, xhr) {
+				return xhr.getResponseHeader("X-CSRF-Token");
+			});
+		},
 		
         // standard table vm (start)
         _registerForP13n: function() {

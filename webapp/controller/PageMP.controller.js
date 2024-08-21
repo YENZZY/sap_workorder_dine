@@ -815,13 +815,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     this.csrfToken = token; // CSRF 토큰 저장
                     console.log("token", this.csrfToken);
                     
-                    this.saveData = postArray;
                     // POST 요청을 보내는 함수 호출
                     var postPromises = postArray.map(function(data) {  
                     
-                    console.log("parr",this.saveData);
-
-                        console.log(".saveDataTotalQuantity", this.saveData.TotalQuantity);
                         return this.postProductionOrder(data); // 각 요청에 대한 Promise 반환
                     }.bind(this)); // `this` 바인딩
             
@@ -884,7 +880,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     }.bind(this), // `this` 바인딩
                     error: function(xhr) {
                         try {
-                            this.handleError(xhr); // `this`를 바인딩하여 콜백 함수에 전달
+                            this.handleError(xhr, data); // `this`를 바인딩하여 콜백 함수에 전달
                             reject(xhr); // 실패 시 Promise 거부
                         } catch (error) {
                             reject(error); // `handleError`에서 오류가 발생한 경우
@@ -931,13 +927,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         },
 
         // 오류 시 처리 함수
-        handleError: function(xhr) {
-            console.log("data2", this.saveData);
+        handleError: function(xhr, requestData) {
 
             // 메인 모델 가져오기
             var oMainModel = this.getOwnerComponent().getModel("mainData");
             var error = "";
-            this.saveData.map(function(errorData){
             try {
                 error = xhr.responseJSON.error.message.value;
             } catch (e) {
@@ -947,20 +941,19 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. " + "에러 메시지: " + error;
             console.log("erromsg", errorMessage);
 
-            console.log("에러 데이터",errorData.TotalQuantity);
             var updatedOData = {
                 Status: "2", // 에러
                 ManufacturingOrder: "", // 생산 오더
                 MfgOrderType: "2", // 양산
-                ManufacturingOrderType: errorData.ManufacturingOrderType,
-                Material: errorData.Material,
-                ProductionPlant: errorData.ProductionPlant,
-                MfgOrderPlannedTotalQty: errorData.TotalQuantity,
-                ProductionVersion: errorData.ProductionVersion,
+                ManufacturingOrderType: requestData.ManufacturingOrderType,
+                Material: requestData.Material,
+                ProductionPlant: requestData.ProductionPlant,
+                MfgOrderPlannedTotalQty: requestData.TotalQuantity,
+                ProductionVersion: requestData.ProductionVersion,
                 MfgOrderPlannedStartDate: this.MfgOrderPlannedStartDate,
-                Yy1ProdRankOrd: errorData.YY1_PROD_RANK_ORD,
-                Yy1PrioRankOrd: errorData.YY1_PRIO_RANK_ORD,
-                Yy1ProdText: errorData.YY1_PROD_TEXT_ORD,
+                Yy1ProdRankOrd: requestData.YY1_PROD_RANK_ORD,
+                Yy1PrioRankOrd: requestData.YY1_PRIO_RANK_ORD,
+                Yy1ProdText: requestData.YY1_PROD_TEXT_ORD,
                 Message: errorMessage
             };
             console.log("변환된 값",updatedOData.MfgOrderPlannedTotalQty);
@@ -977,7 +970,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     this.setModelData();
                     this.navTo("Main", {});
                 }.bind(this)); // `this` 바인딩
-            }.bind(this));
         },
 
         // CSRF 토큰을 가져오는 함수
