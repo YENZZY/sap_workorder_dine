@@ -85,8 +85,19 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     // 모델이 mfgOrderModel일 때
                     if (modelName === "mfgOrderModel") {
                         var oMfgOrderModel = this.getModel("mfgOrderModel");
-                        var aData = oMfgOrderModel.getProperty("/");
+                        var oMfgData = oMfgOrderModel.getData();
                         
+                        // ManufacturingOrderType이 "DN01"인 항목만 필터링
+                        var filteredData = Array.isArray(oMfgData) ? oMfgData.filter(function(item) {
+                            return item.ManufacturingOrderType !== "DN01"; // 필터링 조건
+                        }) : [];
+                        
+                        // 필터링된 데이터로 모델 업데이트
+                        this.setModel(new JSONModel(filteredData), "mfgOrderModel");
+                        
+                        // 필터링된 데이터의 첫 번째 항목에서 ManufacturingOrderTypeName 가져오기
+                        var aData = filteredData; // 필터링된 데이터 사용
+
                         if (aData.length > 0) {
                             var sSelectedKey = aData[0].ManufacturingOrderType;
                             console.log("Selected Key", sSelectedKey);
@@ -946,7 +957,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 error = "오류 메시지를 추출하는 데 문제가 발생했습니다.";
             }
             // 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
-            var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. " + "에러 메시지: " + error;
+            var errorMessage = "에러 메시지 : " + error;
             console.log("erromsg", errorMessage);
 
             var updatedOData = {

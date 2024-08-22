@@ -5,9 +5,10 @@
 sap.ui.define([
         "sap/ui/core/UIComponent",
         "sap/ui/Device",
-        "dinewkorder/model/models"
+        "dinewkorder/model/models",
+        "sap/ui/model/json/JSONModel"
     ],
-    function (UIComponent, Device, models) {
+    function (UIComponent, Device, models, JSONModel) {
         "use strict";
 
         return UIComponent.extend("dinewkorder.Component", {
@@ -41,7 +42,8 @@ sap.ui.define([
                  document.head.appendChild(jQueryScript);
 
                   //작업지시 생성 라우팅 모델 설정
-                  this.setModel (models.createProductionRoutingModel(), "ProductRoutingApI")
+                  this.setModel (models.createProductionRoutingModel(), "ProductRoutingApI");
+                  this.setModel(new JSONModel,"dataModel");
 
             },
         });

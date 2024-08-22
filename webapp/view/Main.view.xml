@@ -36,8 +36,8 @@
                     rowMode="Auto"
                     ariaLabelledBy="title"
                     rows="{dataModel>/}"
-                    selectionMode="MultiToggle"
                     width="auto"
+                     selectionMode="None"
                 >
                     <extension>
                         <m:OverflowToolbar>
@@ -56,7 +56,6 @@
                                 fileType="XLSX,xlsx"
                                 change="onUpload"
                             />
-                            <m:Button id="delete" text="삭제(에러)" press="onDelete"/>
                             <m:Button icon="sap-icon://action-settings" press="openPersoDialog"/>
                         </m:OverflowToolbar>
                     </extension>

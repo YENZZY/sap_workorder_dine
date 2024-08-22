@@ -117,14 +117,14 @@
         },
         {
           "name": "PageSO",
-          "pattern": "PageSO/:Uuid:",
+          "pattern": "PageSO/:array:",
           "target": [
             "PageSO"
           ]
         },
         {
           "name": "PageMP",
-          "pattern": "PageMP/:Uuid:",
+          "pattern": "PageMP/:array:",
           "target": [
             "PageMP"
           ]

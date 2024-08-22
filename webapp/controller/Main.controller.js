@@ -23,7 +23,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
 
             this._registerForP13n();
-		
+			
         },
 
 		_onRouteMatched: function () {
@@ -33,23 +33,25 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		_getData: function () {
 			var oMainModel = this.getOwnerComponent().getModel("dineData"); // cus
 			var oDineModel = this.getOwnerComponent().getModel("mainData"); //dev
-		
+			var oDataModel = this.getOwnerComponent().getModel("dataModel");
+
+			// 작업지시 (개수)
+			if (oDataModel) {
+				var oData = oDataModel.getData();
+				var length = Array.isArray(oData) ? oData.length : 0;
+
+				var oTitle = this.byId("title");
+				oTitle.setText("작업지시 (" + length + ")");
+			}
+			
 			// fetchModel 함수를 수정하여 Promise를 반환하도록 변경
-			var fetchModel = function(url, modelName, isDineModel) {
+			var fetchModel = function(url, modelName,isDineModel) {
 				var model = isDineModel ? oDineModel : oMainModel;
 				return this._getODataRead(model, url).then(function(data) {
 					var oModel = new JSONModel(data);
-					this.setModel(oModel, modelName);
+					this.getOwnerComponent().setModel(oModel, modelName);
+					console.log("modelss",this.getModel(modelName),modelName);
 					
-					// 작업지시 (개수)
-					var oModel = this.getModel("dataModel");
-					if (oModel) {
-						var oData = oModel.getData();
-						var length = Array.isArray(oData) ? oData.length : 0;
-
-						var oTitle = this.byId("title");
-						oTitle.setText("작업지시 (" + length + ")");
-					}
 				}.bind(this)).catch(function(error) {
 					console.error("데이터를 가져오는 데 실패했습니다:", url, error);
 				});
@@ -58,20 +60,20 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		
 			// fetchModel 호출의 결과로 Promise 배열 생성
 			var fetchPromises = [
-				fetchModel("/MfgOrder", "mfgOrderModel"),
-				fetchModel("/SalesOrder", "soModel"),
-				fetchModel("/Product", "productModel"),
-				fetchModel("/ProductionVersion", "prodVerModel"),
-				fetchModel("/Plant", "plantModel"),
+				fetchModel("/MfgOrder", "mfgOrderModel",false),
+				fetchModel("/SalesOrder", "soModel", false),
+				fetchModel("/Product", "productModel", false),
+				fetchModel("/ProductionVersion", "prodVerModel", false),
+				fetchModel("/Plant", "plantModel", false),
 				fetchModel("/ProdLvl", "prodLvlModel", true),
-				fetchModel("/SchedPri", "schedPriModel", true),
-				fetchModel("/ProdOrder", "dataModel", true)
+				fetchModel("/SchedPri", "schedPriModel", true)
+				// fetchModel("/ProdOrder", "dataModel", true)
 			];
 		
 			// 모든 fetch 작업이 완료될 때까지 기다림
 			Promise.all(fetchPromises).then(function() {
 				// 모든 모델이 이제 가져오고 설정됨
-				var dataModel = this.getModel("dataModel");
+				var dataModel = this.getOwnerComponent().getModel("dataModel");
 				var mfgOrderModel = this.getModel("mfgOrderModel");
 				var soModel = this.getModel("soModel");
 				var productModel = this.getModel("productModel");
@@ -81,41 +83,42 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					var mfgOrders = mfgOrderModel.getData();
 					var salesOrders = soModel.getData();
 					var products = productModel.getData();
-		
-					// 다른 모델을 기반으로 dataModel 업데이트
-					data.forEach(function(dataItem) {
-						// ManufacturingOrderType과 일치하는 항목 찾기
-						var matchingOrder = mfgOrders.find(function(order) {
-							return order.ManufacturingOrderType === dataItem.ManufacturingOrderType;
+					
+					if(data.length>0){
+						// 다른 모델을 기반으로 dataModel 업데이트
+						data.forEach(function(dataItem) {
+							// ManufacturingOrderType과 일치하는 항목 찾기
+							var matchingOrder = mfgOrders.find(function(order) {
+								return order.ManufacturingOrderType === dataItem.ManufacturingOrderType;
+							});
+			
+							if (matchingOrder) {
+								dataItem.ManufacturingOrderTypeName = matchingOrder.ManufacturingOrderTypeName;
+							}
+			
+							// SalesOrder와 SalesOrderItem이 일치하는 항목 찾기
+							var matchingMaterial = salesOrders.find(function(salesOrder) {
+								return salesOrder.SalesOrder === dataItem.SalesOrder && salesOrder.SalesOrderItem === dataItem.SalesOrderItem;
+							});
+			
+							if (matchingMaterial) {
+								dataItem.Material = matchingMaterial.Material;
+							}
+			
+							// Material과 일치하는 Product 항목 찾기
+							var matchingProduct = products.find(function(product) {
+								return product.Product === dataItem.Material;
+							});
+			
+							if (matchingProduct) {
+								dataItem.ProductDescription = matchingProduct.ProductDescription;
+								dataItem.BaseUnit = matchingProduct.BaseUnit;
+							}
 						});
-		
-						if (matchingOrder) {
-							dataItem.ManufacturingOrderTypeName = matchingOrder.ManufacturingOrderTypeName;
-						}
-		
-						// SalesOrder와 SalesOrderItem이 일치하는 항목 찾기
-						var matchingMaterial = salesOrders.find(function(salesOrder) {
-							return salesOrder.SalesOrder === dataItem.SalesOrder && salesOrder.SalesOrderItem === dataItem.SalesOrderItem;
-						});
-		
-						if (matchingMaterial) {
-							dataItem.Material = matchingMaterial.Material;
-						}
-		
-						// Material과 일치하는 Product 항목 찾기
-						var matchingProduct = products.find(function(product) {
-							return product.Product === dataItem.Material;
-						});
-		
-						if (matchingProduct) {
-							dataItem.ProductDescription = matchingProduct.ProductDescription;
-							dataItem.BaseUnit = matchingProduct.BaseUnit;
-						}
-					});
-		
-					// 업데이트된 dataModel 설정
-					var updatedModel = new JSONModel(data);
-					this.setModel(updatedModel, "dataModel");
+
+						// 업데이트된 dataModel 설정
+						this.setModel(new JSONModel(data), "dataModel");
+					}
 				}
 			}.bind(this)).catch(function(error) {
 				console.error("모델 처리 중 오류 발생:", error);
@@ -132,67 +135,52 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			this.navTo("PageMP",{});
 		},
 
-		// 상세 페이지 이동
-		onMove: function (oEvent) {
-			if(oEvent.getSource().getParent().getBindingContext("dataModel").getObject().MfgOrderType === '수주'){
-				var oRowData = oEvent.getSource().getParent().getBindingContext("dataModel").getObject().Uuid
-				this.navTo("PageSO", { 
-					Uuid: oRowData
-				});
-			} else { // 양산
-				var oRowData = oEvent.getSource().getParent().getBindingContext("dataModel").getObject().Uuid
-				this.navTo("PageMP", { 
-					Uuid: oRowData
-				});
-			}
-		},
-
 		// 삭제 (에러)
-		onDelete: function () {
-			var oMainModel = this.getOwnerComponent().getModel("mainData");
-			var oDataTable = this.byId("dataTable");
-			var aSelectedIndices = oDataTable.getSelectedIndices(); // 선택된 항목의 인덱스를 가져오기
-			var oDataModel = this.getModel("dataModel").getData();
-			console.log("aSelectedIndices", aSelectedIndices);
+		// onDelete: function () {
+		// 	var oMainModel = this.getOwnerComponent().getModel("mainData");
+		// 	var oDataTable = this.byId("dataTable");
+		// 	var aSelectedIndices = oDataTable.getSelectedIndices(); // 선택된 항목의 인덱스를 가져오기
+		// 	var oDataModel = this.getModel("dataModel").getData();
+		// 	console.log("aSelectedIndices", aSelectedIndices);
 		
-			if (aSelectedIndices.length === 0) {
-				MessageBox.error("선택한 항목이 없습니다.");
-				return;
-			}
+		// 	if (aSelectedIndices.length === 0) {
+		// 		MessageBox.error("선택한 항목이 없습니다.");
+		// 		return;
+		// 	}
 		
-			// 삭제할 항목 배열 생성
-			if (!this.aItemsToDelete) {
-				this.aItemsToDelete = [];
-			}
+		// 	// 삭제할 항목 배열 생성
+		// 	if (!this.aItemsToDelete) {
+		// 		this.aItemsToDelete = [];
+		// 	}
 		
-			// 선택된 인덱스를 통해 항목 데이터를 가져와 aItemsToDelete 배열에 추가
-			var aDeletePromises = aSelectedIndices.map(function (iIndex) {
-				var oRowData = oDataModel[iIndex];
-				console.log("or", oRowData);
+		// 	// 선택된 인덱스를 통해 항목 데이터를 가져와 aItemsToDelete 배열에 추가
+		// 	var aDeletePromises = aSelectedIndices.map(function (iIndex) {
+		// 		var oRowData = oDataModel[iIndex];
+		// 		console.log("or", oRowData);
 		
-				// 삭제할 수 없는 항목을 처리
-				if (oRowData.Status === "생성" || oRowData.ManufacturingOrder) {
-					// 삭제할 수 없는 항목에 대해 사용자에게 메시지를 표시하고, 배열에서 제거
-					MessageBox.error("작업지시가 생성된 행은 삭제할 수 없습니다.");
-					return Promise.reject("삭제할 수 없는 항목(생성)이 있습니다.");
-				}
+		// 		// 삭제할 수 없는 항목을 처리
+		// 		if (oRowData.Status === "생성" || oRowData.ManufacturingOrder) {
+		// 			// 삭제할 수 없는 항목에 대해 사용자에게 메시지를 표시하고, 배열에서 제거
+		// 			MessageBox.error("작업지시가 생성된 행은 삭제할 수 없습니다.");
+		// 			return Promise.reject("삭제할 수 없는 항목(생성)이 있습니다.");
+		// 		}
 		
-				var param = "/ProdOrder(guid'" + oRowData.Uuid + "')";
-				return this._getODataDelete(oMainModel, param);
-			}.bind(this));
+		// 		var param = "/ProdOrder(guid'" + oRowData.Uuid + "')";
+		// 		return this._getODataDelete(oMainModel, param);
+		// 	}.bind(this));
 		
-			// 모든 삭제 요청이 완료되면 실행되는 코드
-			Promise.all(aDeletePromises).then(function () {
-				this._getData(); // 데이터 다시 가져오기
-				MessageBox.success("선택 항목 삭제를 성공하였습니다.");
-			}.bind(this)).catch(function () {
-				// 삭제 요청이 실패한 경우 사용자에게 오류 메시지 표시
-				MessageBox.error("선택 항목 삭제를 실패하였습니다.");
-			}).finally(function () {
-				// 항상 실행되는 코드 (필요할 경우 사용)
-				// 예: 선택 해제, UI 업데이트 등
-			});
-		},		
+		// 	// 모든 삭제 요청이 완료되면 실행되는 코드
+		// 	Promise.all(aDeletePromises).then(function () {
+		// 		this._getData(); // 데이터 다시 가져오기
+		// 		MessageBox.success("선택 항목 삭제를 성공하였습니다.");
+		// 	}.bind(this)).catch(function () {
+		// 		// 삭제 요청이 실패한 경우 사용자에게 오류 메시지 표시
+		// 		MessageBox.error("선택 항목 삭제를 실패하였습니다.");
+		// 	}).finally(function () {
+		// 		// 항상 실행되는 코드 (필요할 경우 사용)
+		// 		// 예: 선택 해제, UI 업데이트 등
+		// 	});
+		// },		
 
 		onUpload: function (oEvent) {
 			var file = oEvent.getParameter("files")[0]; // 선택된 파일 가져오기
@@ -369,6 +357,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					console.log("postArray", postArray); 
 
             this.csrfToken = "";
+			// 전체 성공 및 오류 데이터를 저장할 배열
+			this.successResponses = [];
+			this.errorResponses = [];
 
             // CSRF 토큰을 가져오는 함수 호출
             this.getCSRFToken().then(function(token) {
@@ -377,15 +368,20 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
                 
                 // POST 요청을 보내는 함수 호출
                 var postPromises = postArray.map(function(data,index) {  
-                
+					
                     return this.postProductionOrder(data,index); // 각 요청에 대한 Promise 반환
                 }.bind(this)); // `this` 바인딩
-        
+				
                 // 모든 POST 요청이 완료될 때까지 대기
                 Promise.all(postPromises).then(function() {
 					console.log("모든 POST 요청 완료");
 					MessageBox.success("작업 지시 생성이 완료되었습니다.");
-					
+					// 성공 및 오류 응답 통합
+					var combinedResponses = this.successResponses.concat(this.errorResponses);
+					console.log("combinedResponses",combinedResponses);
+					// 데이터 모델에 통합 응답 설정
+					var oDataModel = this.getOwnerComponent().getModel("dataModel");
+					oDataModel.setData(combinedResponses);
 				}.bind(this)).catch(function(err) {
 					console.error("POST 요청 중 오류 발생:", err);
 					MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.")
@@ -440,17 +436,16 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				});
 			}.bind(this));
 		},
-			
+		
 		// 성공 시 처리 함수 (예: 화면 업데이트)
 		handleSuccess: function(response,index) {
 			var dates = this.saveProdOrder[index].MfgOrderPlannedStartDate;
-			var oMainModel = this.getOwnerComponent().getModel("mainData");
 			console.log("Response:", response.d);
 			var dataArray = response.d;
 			var updatedOData = {
-				Status: "1", // 생성
+				Status: "생성", // 생성
 				ManufacturingOrder: dataArray.ManufacturingOrder, // 생산 오더
-				MfgOrderType: dataArray.SalesOrder && dataArray.SalesOrderItem ? "1" : "2", // 수주 : 양산
+				MfgOrderType: dataArray.SalesOrder && dataArray.SalesOrderItem ? "수주" : "양산", // 수주 : 양산
 				SalesOrder: dataArray.SalesOrder,
 				SalesOrderItem: dataArray.SalesOrderItem,
 				ManufacturingOrderType: dataArray.ManufacturingOrderType,
@@ -465,24 +460,14 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				Message: ""
 			};
 
-			console.log("업데이트 값:", updatedOData);
-
-			this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
-				.done(function() {
-					// Success callback
-					this._getData();
-				}.bind(this)) // `this` 바인딩
-				.fail(function() {
-					// Error callback
-					this._getData();
-				}.bind(this)); // `this` 바인딩
+			 // 성공 응답을 배열에 추가
+			 this.successResponses.push(updatedOData);
 		},
 
 		// 오류 시 처리 함수
 		handleError: function(xhr,requestData, index) {
 			var dates = this.saveProdOrder[index].MfgOrderPlannedStartDate;
-			// 메인 모델 가져오기
-			var oMainModel = this.getOwnerComponent().getModel("mainData");
+			console.log("this.saveProdOrder[index]",this.saveProdOrder[index]);
 			var error = "";
 			try {
 				error = xhr.responseJSON.error.message.value;
@@ -490,12 +475,12 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				error = "오류 메시지를 추출하는 데 문제가 발생했습니다.";
 			}
 			// 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
-			var errorMessage = "작업 지시 생성 중 오류가 발생했습니다. " + "에러 메시지: " + error;
+			var errorMessage =  "에러 메시지 : " + error;
 			console.log("erromsg", errorMessage);
 			var updatedOData = {
-				Status: "2", // 에러
+				Status: "에러", // 에러
 				ManufacturingOrder: "", // 생산 오더
-				MfgOrderType: requestData.SalesOrder && requestData.SalesOrderItem ? "1" : "2", // 수주 : 양산
+				MfgOrderType: requestData.SalesOrder && requestData.SalesOrderItem ? "수주" : "양산", // 수주 : 양산
 				SalesOrder: requestData.SalesOrder,
 				SalesOrderItem: requestData.SalesOrderItem,
 				ManufacturingOrderType: requestData.ManufacturingOrderType,
@@ -511,16 +496,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			};
 			console.log("변환된 값",updatedOData.MfgOrderPlannedTotalQty);
 			console.log("업데이트 값:", updatedOData);
-
-			this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
-				.done(function() {
-					// Success callback
-					this._getData();
-				}.bind(this)) // `this` 바인딩
-				.fail(function() {
-					// Error callback
-					this._getData();
-				}.bind(this)); // `this` 바인딩
+			 // 오류 응답을 배열에 추가
+			 this.errorResponses.push(updatedOData);
+			
 		},
 
 		// CSRF 토큰을 가져오는 함수
