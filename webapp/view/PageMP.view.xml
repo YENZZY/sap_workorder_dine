@@ -140,7 +140,7 @@
                             path: 'prodLvlModel>/'
                             }"
                             liveChange="onTokenUpdate"
-                            change="getInputValue"
+                            tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>
                                 <Column>
@@ -171,6 +171,7 @@
                             path: 'schedPriModel>/'
                             }"
                             liveChange="onTokenUpdate"
+                            tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>
                                 <Column>

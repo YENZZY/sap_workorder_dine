@@ -797,6 +797,21 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 MessageToast.show("하나의 항목만 입력할 수 있습니다.");
             }
         },
+
+        // 토큰 지울 떄 input 값 지우기
+        onChangeToken: function (oEvent) {
+            var oMultiInput = oEvent.getSource();
+            console.log("oev",oMultiInput);
+            var aTokens = oMultiInput.getTokens();
+
+            
+            if (oMultiInput.getId().includes("prodLvlVH")){
+                this.byId("prodDescription").setValue('');
+            } else if (oMultiInput.getId().includes("schedPriVH")){
+                this.byId("schedDescription").setValue('');
+            }
+        },
+        
         // value help 끝
 
         // 오더 유형 타입 내역 데이터

@@ -661,6 +661,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         onTokenUpdate: function (oEvent) {
             var oMultiInput = oEvent.getSource();
+            console.log("oev",oMultiInput);
             var aTokens = oMultiInput.getTokens();
             if(this.selectedSalesOrder===0){
                 var salesItemToken = this.byId("salesOrderItemVH").setTokens([]);
@@ -669,7 +670,26 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             // 단일 토큰만 허용하도록 설정
             if (aTokens.length > 0) {
                 oMultiInput.removeAllTokens();
+                if (oMultiInput.getId().includes("prodLvlVH")){
+                    this.byId("prodDescription").setValue('');
+                } else if (oMultiInput.getId().includes("schedPriVH")){
+                    this.byId("schedDescription").setValue('');
+                }
                 MessageToast.show("하나의 항목만 입력할 수 있습니다.");
+            }
+        },
+
+        // 토큰 지울 떄 input 값 지우기
+        onChangeToken: function (oEvent) {
+            var oMultiInput = oEvent.getSource();
+            console.log("oev",oMultiInput);
+            var aTokens = oMultiInput.getTokens();
+
+            
+            if (oMultiInput.getId().includes("prodLvlVH")){
+                this.byId("prodDescription").setValue('');
+            } else if (oMultiInput.getId().includes("schedPriVH")){
+                this.byId("schedDescription").setValue('');
             }
         },
 
