@@ -86,7 +86,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					var salesOrders = soModel.getData();
 					var products = productModel.getData();
 					
-					if(data.length>0){
+					if(data.length > 0){
 						// 다른 모델을 기반으로 dataModel 업데이트
 						data.forEach(function(dataItem) {
 							// ManufacturingOrderType과 일치하는 항목 찾기
@@ -359,10 +359,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					console.log("postArray", postArray); 
 
             this.csrfToken = "";
-			// 전체 성공 및 오류 데이터를 저장할 배열
-			this.successResponses = [];
-			this.errorResponses = [];
-
+		
             // CSRF 토큰을 가져오는 함수 호출
             this.getCSRFToken().then(function(token) {
                 this.csrfToken = token; // CSRF 토큰 저장
@@ -378,15 +375,12 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
                 Promise.all(postPromises).then(function() {
 					console.log("모든 POST 요청 완료");
 					MessageBox.success("작업 지시 생성이 완료되었습니다.");
-					// 성공 및 오류 응답 통합
-					var combinedResponses = this.successResponses.concat(this.errorResponses);
-					console.log("combinedResponses",combinedResponses);
-					// 데이터 모델에 통합 응답 설정
-					var oDataModel = this.getOwnerComponent().getModel("dataModel");
-					oDataModel.setData(combinedResponses);
+					this._getData();
+					
 				}.bind(this)).catch(function(err) {
 					console.error("POST 요청 중 오류 발생:", err);
 					MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.")
+					this._getData();
 				}.bind(this));
 				}.bind(this)).catch(function(err) {
 					console.error("CSRF 토큰 요청 중 오류 발생:", err);});
@@ -462,8 +456,20 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				Message: ""
 			};
 
-			 // 성공 응답을 배열에 추가
-			 this.successResponses.push(updatedOData);
+			console.log("업데이트 값:", updatedOData);
+            var oDataModel = this.getOwnerComponent().getModel("dataModel");
+            var existingData = oDataModel.getData() || [];
+            var updatedData = [];
+            if (Array.isArray(existingData)) {
+                // existingData가 배열인 경우, 배열을 병합
+                updatedData = existingData.concat([updatedOData]);
+                console.log("updatedData",updatedData);
+            } else {
+                // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
+                updatedData = [updatedOData];
+                console.log("updatedData2",[updatedData]);
+            }
+            oDataModel.setData(updatedData);
 		},
 
 		// 오류 시 처리 함수
@@ -488,7 +494,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				ManufacturingOrderType: requestData.ManufacturingOrderType,
 				Material: requestData.Material,
 				ProductionPlant: requestData.ProductionPlant,
-				MfgOrderPlannedTotalQty: requestData.TotalQuantity,
+				MfgOrderPlannedTotalQty: parseFloat(requestData.TotalQuantity),
 				ProductionVersion: requestData.ProductionVersion,
 				MfgOrderPlannedStartDate: dates,
 				Yy1ProdRankOrd: requestData.YY1_PROD_RANK_ORD,
@@ -498,8 +504,19 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			};
 			console.log("변환된 값",updatedOData.MfgOrderPlannedTotalQty);
 			console.log("업데이트 값:", updatedOData);
-			 // 오류 응답을 배열에 추가
-			 this.errorResponses.push(updatedOData);
+            var oDataModel = this.getOwnerComponent().getModel("dataModel");
+            var existingData = oDataModel.getData() || [];
+            var updatedData = [];
+            if (Array.isArray(existingData)) {
+                // existingData가 배열인 경우, 배열을 병합
+                updatedData = existingData.concat([updatedOData]);
+                console.log("updatedData",updatedData);
+            } else {
+                // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
+                updatedData = [updatedOData];
+                console.log("updatedData2",[updatedData]);
+            }
+            oDataModel.setData(updatedData);
 			
 		},
 
