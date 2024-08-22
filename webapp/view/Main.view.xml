@@ -41,7 +41,7 @@
                 >
                     <extension>
                         <m:OverflowToolbar>
-                            <m:Title id="title" text="작업지시"/>
+                            <m:Title id="title" text="작업지시 (0)"/>
                             <m:ToolbarSeparator/>
                             <vm:VariantManagement id="p13nVm" for="dataTable"/>
                             <m:ToolbarSpacer/>
@@ -56,6 +56,7 @@
                                 fileType="XLSX,xlsx"
                                 change="onUpload"
                             />
+                            <m:Button id="delete" text="삭제(에러)" press="onDelete"/>
                             <m:Button icon="sap-icon://action-settings" press="openPersoDialog"/>
                         </m:OverflowToolbar>
                     </extension>
@@ -291,7 +292,7 @@
                                 <m:Text text="{dataModel>Message}"/>
                             </template>
                         </Column>
-                        <Column
+                        <!-- <Column
                             id="action_col"
                             headerMenu="menu"
                             resizable="true"
@@ -303,7 +304,7 @@
                                 press="onMove"
                                 />
                             </template>
-                        </Column>
+                        </Column> -->
                     </columns>
                 </Table>
             </f:content>

@@ -28,13 +28,19 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         },
 
-		_onRouteMatched: function () {
+		_onRouteMatched: function (oEvent) {
+            
+
+            var oArgs = oEvent.getParameter("arguments");
+
+            this.Uuid = oArgs.Uuid;
+
             this._getData();
         },
 
         _getData: function () {
             this.modelData();
-
+           
 		},
 
         setModelData: function () {
@@ -123,6 +129,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             rankModelData("/ProdOrder", "dataModel");
             rankModelData("/ProdLvl", "prodLvlModel");
             rankModelData("/SchedPri", "schedPriModel");
+            
             
         },
 
@@ -474,16 +481,15 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 var oDataModel = this.getModel("dataModel").getData();
                 var mfgQtydata = 0; // 초기화
                  
-                 // 데이터 모델에서 기 생성된 작업 지시 수량을 더합니다.
+                 // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
                 oDataModel.forEach(function(data) {
-                     if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey) {
+                     if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey && data.ManufacturingOrder) { // 생산 오더가 있는 데이터 (기생성된 작업 수량)
                         mfgQtydata += parseFloat(data.MfgOrderPlannedTotalQty) || 0;
                      }
                 });
                  
                 // mfgQtydata를 this.mfgQtydata로 저장하여 사용
                 this.mfgQtydata = mfgQtydata;
-                
                 // 두 개의 입력 필드에 값 설정
                 var oMaterialInput = this.byId("materialVH");
                 var oPlantInput = this.byId("plantVH");
@@ -500,6 +506,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     oMfgQtyInput.setValue(mfgQtyText ? (mfgQtyText - this.mfgQtydata) || 0 : 0); // 값이 없으면 빈 문자열로 설정
                 }
             }
+            console.log("oMfgQtyInput",oMfgQtyInput);
 
             // 생산 순위 내역 및 우선 순위 내역 input 데이터 추가
             if(this.oMultiInputSuggestion.getId().includes("prodLvlVH")){
@@ -604,6 +611,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // suggestion 선택 
         onPageVHSelected: function (oEvent) {
+            var oDataModel = this.getModel("dataModel").getData();
             var oMultiInput = oEvent.getSource();
             var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
             console.log("osi",oSelectedItem);
@@ -665,7 +673,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                                 if (aData[i][sKeyData] === sKey) {
                                     materialText = aData[i][sTextData[0]]; // 첫 번째 텍스트 데이터
                                     plantText = aData[i][sTextData[1]];    // 두 번째 텍스트 데이터
-                                    mfgQtyText = aData[i][sTextData[2]];
+                                    mfgQtyText = (aData[i][sTextData[2]]); 
                                    
                                     break;
                                 }
@@ -676,7 +684,18 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         var oMaterialInput = this.byId(sId[0]);
                         var oPlantInput = this.byId(sId[1]);
                         var oMfgQtyInput = this.byId(sId[2]);
-                
+
+                        var mfgQtydata = 0; // 초기화
+                 
+                        // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
+                        oDataModel.forEach(function(data) {
+                            if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey && data.ManufacturingOrder) { // 생산 오더가 있는 데이터 (기생성된 작업 수량)
+                                mfgQtydata += parseFloat(data.MfgOrderPlannedTotalQty) || 0;
+                            }
+                        });
+                 
+                        // mfgQtydata를 this.mfgQtydata로 저장하여 사용
+                        this.mfgQtydata = mfgQtydata;
                         if (oMaterialInput) {
                             oMaterialInput.setValue(materialText || ""); // 값이 없으면 빈 문자열로 설정
                         }
@@ -686,8 +705,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         }
 
                         if (oMfgQtyInput) {
-                            oMfgQtyInput.setValue(mfgQtyText || ""); // 값이 없으면 빈 문자열로 설정
+                            oMfgQtyInput.setValue(mfgQtyText ? (mfgQtyText - this.mfgQtydata) || 0 : 0); // 기생성된 작업 수량(값이 없으면 빈 문자열로 설정)
                         }
+                        console.log("omftest",mfgQtyText);
+                        console.log("mfgtest",this.mfgQtyData);
                     }
                     // 생산 순위 내역 및 우선 순위 내역 input 데이터 추가
                     if(contextModel === "prodLvlModel" || contextModel === "schedPriModel"){
@@ -749,7 +770,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // 토큰 삭제 될 때 기존 값 삭제하기 
         onTokenDelete: function (oEvent) {
-            // 삭제된 토큰의 정보를 가져옵니다
+            // 삭제된 토큰의 정보를 가져오기
             var oToken = oEvent.getParameter("token");
         
             // MultiInput의 ID를 확인하여 필요한 필드의 값을 지우기
@@ -1022,7 +1043,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     error: function(xhr) {
                         try {
                             this.handleError(xhr, data); // `this`를 바인딩하여 콜백 함수에 전달
-                            reject(xhr); // 실패 시 Promise 거부
                         } catch (error) {
                             reject(error); // `handleError`에서 오류가 발생한 경우
                         }

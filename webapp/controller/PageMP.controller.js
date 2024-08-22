@@ -890,7 +890,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     error: function(xhr) {
                         try {
                             this.handleError(xhr, data); // `this`를 바인딩하여 콜백 함수에 전달
-                            reject(xhr); // 실패 시 Promise 거부
                         } catch (error) {
                             reject(error); // `handleError`에서 오류가 발생한 경우
                         }

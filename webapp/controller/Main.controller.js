@@ -23,7 +23,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
 
             this._registerForP13n();
-
 		
         },
 
@@ -41,9 +40,20 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				return this._getODataRead(model, url).then(function(data) {
 					var oModel = new JSONModel(data);
 					this.setModel(oModel, modelName);
+					
+					// 작업지시 (개수)
+					var oModel = this.getModel("dataModel");
+					if (oModel) {
+						var oData = oModel.getData();
+						var length = Array.isArray(oData) ? oData.length : 0;
+
+						var oTitle = this.byId("title");
+						oTitle.setText("작업지시 (" + length + ")");
+					}
 				}.bind(this)).catch(function(error) {
 					console.error("데이터를 가져오는 데 실패했습니다:", url, error);
 				});
+				
 			}.bind(this);
 		
 			// fetchModel 호출의 결과로 Promise 배열 생성
@@ -127,15 +137,62 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			if(oEvent.getSource().getParent().getBindingContext("dataModel").getObject().MfgOrderType === '수주'){
 				var oRowData = oEvent.getSource().getParent().getBindingContext("dataModel").getObject().Uuid
 				this.navTo("PageSO", { 
-					//Uuid: oRowData
+					Uuid: oRowData
 				});
 			} else { // 양산
 				var oRowData = oEvent.getSource().getParent().getBindingContext("dataModel").getObject().Uuid
 				this.navTo("PageMP", { 
-					//Uuid: oRowData
+					Uuid: oRowData
 				});
 			}
 		},
+
+		// 삭제 (에러)
+		onDelete: function () {
+			var oMainModel = this.getOwnerComponent().getModel("mainData");
+			var oDataTable = this.byId("dataTable");
+			var aSelectedIndices = oDataTable.getSelectedIndices(); // 선택된 항목의 인덱스를 가져오기
+			var oDataModel = this.getModel("dataModel").getData();
+			console.log("aSelectedIndices", aSelectedIndices);
+		
+			if (aSelectedIndices.length === 0) {
+				MessageBox.error("선택한 항목이 없습니다.");
+				return;
+			}
+		
+			// 삭제할 항목 배열 생성
+			if (!this.aItemsToDelete) {
+				this.aItemsToDelete = [];
+			}
+		
+			// 선택된 인덱스를 통해 항목 데이터를 가져와 aItemsToDelete 배열에 추가
+			var aDeletePromises = aSelectedIndices.map(function (iIndex) {
+				var oRowData = oDataModel[iIndex];
+				console.log("or", oRowData);
+		
+				// 삭제할 수 없는 항목을 처리
+				if (oRowData.Status === "생성" || oRowData.ManufacturingOrder) {
+					// 삭제할 수 없는 항목에 대해 사용자에게 메시지를 표시하고, 배열에서 제거
+					MessageBox.error("작업지시가 생성된 행은 삭제할 수 없습니다.");
+					return Promise.reject("삭제할 수 없는 항목(생성)이 있습니다.");
+				}
+		
+				var param = "/ProdOrder(guid'" + oRowData.Uuid + "')";
+				return this._getODataDelete(oMainModel, param);
+			}.bind(this));
+		
+			// 모든 삭제 요청이 완료되면 실행되는 코드
+			Promise.all(aDeletePromises).then(function () {
+				this._getData(); // 데이터 다시 가져오기
+				MessageBox.success("선택 항목 삭제를 성공하였습니다.");
+			}.bind(this)).catch(function () {
+				// 삭제 요청이 실패한 경우 사용자에게 오류 메시지 표시
+				MessageBox.error("선택 항목 삭제를 실패하였습니다.");
+			}).finally(function () {
+				// 항상 실행되는 코드 (필요할 경우 사용)
+				// 예: 선택 해제, UI 업데이트 등
+			});
+		},		
 
 		onUpload: function (oEvent) {
 			var file = oEvent.getParameter("files")[0]; // 선택된 파일 가져오기
@@ -157,24 +214,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						console.log(jsDate);
 						return jsDate;
 					}
-
-					// JavaScript Date를 YYYY-MM-DD 형식의 문자열로 변환하는 함수
-					// function formatJSDate(jsDate) {
-					// 	var year = jsDate.getFullYear();
-					// 	var month = ('0' + (jsDate.getMonth() + 1)).slice(-2); // 월은 0부터 시작하므로 +1
-					// 	var day = ('0' + jsDate.getDate()).slice(-2);
-
-					// 	return `${year}-${month}-${day}`;
-					// }
-
-					// JavaScript Date를 YYYYMMDD 형식의 문자열로 변환하는 함수
-					// function formatDateToDATS(jsDate) {
-					// 	var year = jsDate.getFullYear();
-					// 	var month = ('0' + (jsDate.getMonth() + 1)).slice(-2);
-					// 	var day = ('0' + jsDate.getDate()).slice(-2);
-
-					// 	return `${year}${month}${day}`;
-					// }
 					
 					workbook.SheetNames.forEach(function (sheetName) {
 						var excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
