@@ -11,11 +11,12 @@ sap.ui.define([
 	'sap/ui/model/Sorter',
 	'sap/ui/core/library',
 	'sap/m/table/ColumnWidthController',
+	'sap/ui/core/BusyIndicator',
 	'dinewkorder/js/xlsx',
     'dinewkorder/js/jszip',
 	
 ],
-function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, CoreLibrary, ColumnWidthController) {
+function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, CoreLibrary, ColumnWidthController, BusyIndicator) {
     "use strict";
 
     return Controller.extend("dinewkorder.controller.Main", {
@@ -31,6 +32,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
         },
 
 		_getData: function () {
+			BusyIndicator.show(0);
 			var oMainModel = this.getOwnerComponent().getModel("dineData"); // cus
 			var oDineModel = this.getOwnerComponent().getModel("mainData"); //dev
 			var oDataModel = this.getOwnerComponent().getModel("dataModel");
@@ -115,11 +117,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 								dataItem.BaseUnit = matchingProduct.BaseUnit;
 							}
 						});
-
 						// 업데이트된 dataModel 설정
 						this.setModel(new JSONModel(data), "dataModel");
 					}
 				}
+				BusyIndicator.hide();
 			}.bind(this)).catch(function(error) {
 				console.error("모델 처리 중 오류 발생:", error);
 			});
@@ -451,7 +453,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				ManufacturingOrderType: dataArray.ManufacturingOrderType,
 				Material: dataArray.Material,
 				ProductionPlant: dataArray.ProductionPlant,
-				MfgOrderPlannedTotalQty: dataArray.TotalQuantity,
+				MfgOrderPlannedTotalQty: parseFloat(dataArray.TotalQuantity),
 				ProductionVersion: dataArray.ProductionVersion,
 				MfgOrderPlannedStartDate: dates,
 				Yy1ProdRankOrd: dataArray.YY1_PROD_RANK_ORD,

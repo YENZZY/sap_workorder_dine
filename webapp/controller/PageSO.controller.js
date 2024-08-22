@@ -35,8 +35,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         _getData: function () {
             this.modelData();
-            var test = this.getOwnerComponent().getModel("dataModel").getData();
-            console.log("test",test);
             
 		},
 
@@ -123,7 +121,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             commonModelData("/MfgOrder", "mfgOrderModel"); 
             commonModelData("/Product", "productModel");
             commonModelData("/Plant", "plantModel");
-            //rankModelData("/ProdOrder", "dataModel");
             rankModelData("/ProdLvl", "prodLvlModel");
             rankModelData("/SchedPri", "schedPriModel");
             
@@ -912,7 +909,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             // 작업 지시 데이터 생성 함수
             var createOrderData = function(qty) {
                 return {
-                    MfgOrderType:"1", // 수주
+                    MfgOrderType:"수주", // 수주
                     SalesOrder: sSalesOrder,
                     SalesOrderItem: sSalesOrderItem,
                     ManufacturingOrderType: manufacturingOrderType,

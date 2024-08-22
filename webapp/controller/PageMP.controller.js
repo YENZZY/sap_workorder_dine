@@ -16,9 +16,8 @@ sap.ui.define([
     'sap/ui/model/FilterOperator',
     'sap/m/DatePicker',
     'sap/m/Select',
-    'sap/ui/model/odata/v2/ODataModel'
 ],
-function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select, ODataModel) {
+function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select) {
     "use strict";
 
     return Controller.extend("dinewkorder.controller.PageMP", {
@@ -35,6 +34,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         _getData: function () {
             this.modelData();
+            
 		},
 
         setModelData: function () {
@@ -119,7 +119,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             commonModelData("/MfgOrder", "mfgOrderModel"); 
             commonModelData("/Product", "productModel");
             commonModelData("/Plant", "plantModel");
-            rankModelData("/ProdOrder", "dataModel");
             rankModelData("/ProdLvl", "prodLvlModel");
             rankModelData("/SchedPri", "schedPriModel");
             
@@ -756,7 +755,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 // 작업 지시 데이터 생성 함수
                 var createOrderData = function(qty) {
                     return {
-                        MfgOrderType: "2",
+                        MfgOrderType: "양산",
                         ManufacturingOrderType: ManufacturingOrderType, // 오더 유형
                         Material: Material, // 제품
                         ProductionPlant: ProductionPlant, // 플랜트
@@ -845,36 +844,18 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     Promise.all(postPromises)
                         .then(function() {
                             console.log("모든 POST 요청 완료");
-                            MessageBox.success("작업 지시 생성이 완료되었습니다.");
+                            //MessageBox.success("작업 지시 생성이 완료되었습니다.");
                             
                         }.bind(this))
                         .catch(function(err) {
                             console.error("POST 요청 중 오류 발생:", err);
-                            MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
+                            //MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
                         }.bind(this));
                 }.bind(this)).catch(function(err) {
                     console.error("CSRF 토큰 요청 중 오류 발생:", err);
                 });
             }
         },
-            //      // OData 모델을 사용하여 데이터 저장
-            //      var promises = oDataArray.map(function(data) {
-            //         console.log('data',data);
-            //         return this._getODataCreate(oMainModel, "/ProdOrder", data);
-            //     }.bind(this));
-
-            //     // 모든 데이터 저장 시 성공/실패 처리
-            //     Promise.all(promises).then(function() {
-            //         MessageBox.success("작업 지시 생성에 성공하였습니다.");
-                    
-            //     }.bind(this)).catch(function() {
-            //         MessageBox.error("작업 지시 생성에 실패하였습니다.");
-            //     }.bind(this));
-            //     this.setModelData();
-            //     this.navTo("Main", {});
-            // } else {
-            //     MessageBox.error("로트 사이즈는 0 이거나 0 보다 커야합니다.");
-            // }
         
         postProductionOrder: function(data) {
             console.log("data", data);
@@ -915,13 +896,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             console.log("Response:", response.d);
             var dataArray = response.d;
             var updatedOData = {
-                Status: "1", // 생성
+                Status: "생성", // 생성
                 ManufacturingOrder: dataArray.ManufacturingOrder, // 생산 오더
-                MfgOrderType: "2", // 양산
+                MfgOrderType: "양산", // 양산
                 ManufacturingOrderType: dataArray.ManufacturingOrderType,
                 Material: dataArray.Material,
                 ProductionPlant: dataArray.ProductionPlant,
-                MfgOrderPlannedTotalQty: dataArray.TotalQuantity,
+                MfgOrderPlannedTotalQty: parseFloat(dataArray.TotalQuantity),
                 ProductionVersion: dataArray.ProductionVersion,
                 MfgOrderPlannedStartDate: this.MfgOrderPlannedStartDate,
                 Yy1ProdRankOrd: dataArray.YY1_PROD_RANK_ORD,
@@ -932,17 +913,21 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             console.log("업데이트 값:", updatedOData);
 
-            this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
-                .done(function() {
-                    // Success callback
-                    this.setModelData();
-                    this.navTo("Main", {});
-                }.bind(this)) // `this` 바인딩
-                .fail(function() {
-                    // Error callback
-                    this.setModelData();
-                    this.navTo("Main", {});
-                }.bind(this)); // `this` 바인딩
+            var oDataModel = this.getOwnerComponent().getModel("dataModel");
+            var existingData = oDataModel.getData() || [];
+            var updatedData = [];
+            if (Array.isArray(existingData)) {
+                // existingData가 배열인 경우, 배열을 병합
+                updatedData = existingData.concat([updatedOData]);
+                console.log("updatedData",updatedData);
+            } else {
+                // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
+                updatedData = [updatedOData];
+                console.log("updatedData2",[updatedData]);
+            }
+            oDataModel.setData(updatedData);
+            this.setModelData();
+            this.navTo("Main",{});
         },
 
         // 오류 시 처리 함수
@@ -961,13 +946,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             console.log("erromsg", errorMessage);
 
             var updatedOData = {
-                Status: "2", // 에러
+                Status: "에러", // 에러
                 ManufacturingOrder: "", // 생산 오더
-                MfgOrderType: "2", // 양산
+                MfgOrderType: "양산", // 양산
                 ManufacturingOrderType: requestData.ManufacturingOrderType,
                 Material: requestData.Material,
                 ProductionPlant: requestData.ProductionPlant,
-                MfgOrderPlannedTotalQty: requestData.TotalQuantity,
+                MfgOrderPlannedTotalQty: parseFloat(requestData.TotalQuantity),
                 ProductionVersion: requestData.ProductionVersion,
                 MfgOrderPlannedStartDate: this.MfgOrderPlannedStartDate,
                 Yy1ProdRankOrd: requestData.YY1_PROD_RANK_ORD,
@@ -978,17 +963,21 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             console.log("변환된 값",updatedOData.MfgOrderPlannedTotalQty);
             console.log("업데이트 값:", updatedOData);
 
-            this._getODataCreate(oMainModel, "/ProdOrder", updatedOData)
-                .done(function() {
-                    // Success callback
-                    this.setModelData();
-                    this.navTo("Main", {});
-                }.bind(this)) // `this` 바인딩
-                .fail(function() {
-                    // Error callback
-                    this.setModelData();
-                    this.navTo("Main", {});
-                }.bind(this)); // `this` 바인딩
+            var oDataModel = this.getOwnerComponent().getModel("dataModel");
+            var existingData = oDataModel.getData() || [];
+            var updatedData = [];
+            if (Array.isArray(existingData)) {
+                // existingData가 배열인 경우, 배열을 병합
+                updatedData = existingData.concat([updatedOData]);
+                console.log("updatedData",updatedData);
+            } else {
+                // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
+                updatedData = [updatedOData];
+                console.log("updatedData2",[updatedData]);
+            }
+            oDataModel.setData(updatedData);
+            this.setModelData();
+            this.navTo("Main",{});
         },
 
         // CSRF 토큰을 가져오는 함수
