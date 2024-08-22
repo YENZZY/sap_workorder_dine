@@ -891,7 +891,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 // 만약 현재 데이터의 판매 문서와 품목이 일치하면 기 생성된 수량을 누적
                 return (data.SalesOrder === sSalesOrder && data.SalesOrderItem === sSalesOrderItem) 
                     ? acc + (data.MfgOrderPlannedTotalQty || 0) : acc;
-            }, 0); // acc는 누적 값, 초기값은 0
+                }, 0); // acc는 누적 값, 초기값은 0
             }
             // 남은 작업 수량 계산
             var remainingQty = mfgQty - mfgQtyData;

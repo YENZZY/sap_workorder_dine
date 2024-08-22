@@ -69,7 +69,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				fetchModel("/Plant", "plantModel", false),
 				fetchModel("/ProdLvl", "prodLvlModel", true),
 				fetchModel("/SchedPri", "schedPriModel", true)
-				// fetchModel("/ProdOrder", "dataModel", true)
 			];
 		
 			// 모든 fetch 작업이 완료될 때까지 기다림
@@ -123,6 +122,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				}
 				BusyIndicator.hide();
 			}.bind(this)).catch(function(error) {
+				BusyIndicator.hide();
 				console.error("모델 처리 중 오류 발생:", error);
 			});
 		},		
@@ -358,32 +358,131 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 
 					console.log("postArray", postArray); 
 
-            this.csrfToken = "";
-		
-            // CSRF 토큰을 가져오는 함수 호출
-            this.getCSRFToken().then(function(token) {
-                this.csrfToken = token; // CSRF 토큰 저장
-                console.log("token", this.csrfToken);
-                
-                // POST 요청을 보내는 함수 호출
-                var postPromises = postArray.map(function(data,index) {  
+					// 유효성 처리
+					// 1. 오더 유형이 DN01 -> 판매 오더와 판매 오더 문서 없으면 Error
+					// 2. 오더 유형이 DN01 일 때 작업지시 수량 > (판매 오더의 작업지시 수량 - 기생성된 작업수량) 이면 Error
+					// 3. 오더 유형이 DN01 아닐 때 작업지시 수량 > 판매 오더의 작업지시 수량 이면 Error
+					var that = this;
+					// 1. 유효성 검사를 수행하는 함수
+					function isValid(pData) {
+						var oSoModel = that.getModel("soModel").getData();
+           				var oDataModel = that.getOwnerComponent().getModel("dataModel").getData();
+            
+						// 판매 오더의 작업 지시 수량 계산
+						var mfgQty = oSoModel.reduce(function(acc, sdata) {
+							return (sdata.SalesOrder === pData.SalesOrder && sdata.SalesOrderItem === pData.SalesOrderItem)
+								? parseFloat(sdata.OrderQuantity) : acc;
+						}, 0);
+						if (oDataModel.length > 0){
+							// 기존 작업 지시 수량 계산
+							var mfgQtyData = oDataModel.reduce(function(acc, data) {
+								return (data.SalesOrder === pData.SalesOrder && data.SalesOrderItem === pData.SalesOrderItem)
+									? acc + (parseFloat(data.MfgOrderPlannedTotalQty) || 0) : acc;
+							}, 0);
+						} else {
+							mfgQtyData = 0;
+						}
+						// 남은 작업 수량 계산
+						var remainingQty = mfgQty - mfgQtyData;
+						console.log("remaining",mfgQty,mfgQtyData,remainingQty);
+						// 유효성 검사 조건
+						if(remainingQty < 0){
+							return false;
+						}
+						if (pData.ManufacturingOrderType === "DN01") {
+							// DN01인 경우
+							if (!pData.SalesOrder || !pData.SalesOrderItem) {
+								return false; // 판매 오더와 판매 오더 항목이 없으면 유효하지 않음
+							}
+							if (parseFloat(pData.TotalQuantity) > parseFloat(remainingQty)) {
+								return false; // 작업 지시 수량이 남은 작업 수량보다 크면 유효하지 않음
+							}
+						} else {
+							// DN01이 아닌 경우
+							if (parseFloat(pData.TotalQuantity) > parseFloat(mfgQty)) {
+								return false; // 작업 지시 수량이 판매 오더의 작업 지시 수량보다 크면 유효하지 않음
+							}
+						}
+
+						return true; // 모든 조건을 만족하면 유효함
+					}
+
+					// 유효하지 않은 데이터 배열을 저장할 변수
+					var errData = [];
+
+					// postArray에서 유효성 검사를 수행하여 유효하지 않은 데이터만 필터링
+					postArray.forEach(function(pData) {
+						if (!isValid(pData)) {
+							errData.push(pData); // 유효하지 않은 데이터 추가
+						}
+					});
+
+					var errorMessage = "엑셀 데이터 유효성 검사에 실패하였습니다."; // 오류 메시지 템플릿
+					errData = errData.map(function(eData) {
+						// 기본적인 오류 정보를 추가
+						if (eData.ManufacturingOrderType === "DN01") {
+							eData.MfgOrderType = "수주";
+						} else if (eData.ManufacturingOrderType !== "DN01" && eData.SalesOrder && eData.SalesOrderItem) {
+							eData.MfgOrderType = "양산";
+						}
+						eData.Status = "에러";
+						// 유효성 검사 실패에 대한 메시지 추가
+						eData.Message = errorMessage;
 					
-                    return this.postProductionOrder(data,index); // 각 요청에 대한 Promise 반환
-                }.bind(this)); // `this` 바인딩
+						return eData;
+					});
+
+					var oDataModel = this.getOwnerComponent().getModel("dataModel");
+					var existingData = oDataModel.getData() || [];
+					var updatedData = [];
+
+					if (Array.isArray(existingData)) {
+						// existingData가 배열인 경우, 배열을 병합
+						updatedData = existingData.concat(errData);
+					} else {
+						// existingData가 배열이 아닌 경우, errData를 사용하여 새로운 배열로 초기화
+						updatedData = errData;
+					}
+
+					oDataModel.setData(updatedData);
+
+					console.log("업데이트된 오류 데이터:", errData);
+
+					// postArray에서 유효성 검사를 수행하여 유효한 데이터만 필터링
+					var validPostArray = postArray.filter(function(pData) {
+						return isValid(pData);
+					});
+
+					// 이후 validPostArray를 사용하여 POST 요청을 수행하거나 다른 작업을 수행
+					console.log("유효한 데이터 배열:", validPostArray);
+					
+					this.csrfToken = "";
 				
-                // 모든 POST 요청이 완료될 때까지 대기
-                Promise.all(postPromises).then(function() {
-					console.log("모든 POST 요청 완료");
-					MessageBox.success("작업 지시 생성이 완료되었습니다.");
-					this._getData();
+					// CSRF 토큰을 가져오는 함수 호출
+					this.getCSRFToken().then(function(token) {
+						this.csrfToken = token; // CSRF 토큰 저장
+						console.log("token", this.csrfToken);
+						
+					// POST 요청을 보내는 함수 호출
+					var postPromises = validPostArray.map(function(data,index) {  
+						
+						return this.postProductionOrder(data,index); // 각 요청에 대한 Promise 반환
+					}.bind(this)); // `this` 바인딩
 					
-				}.bind(this)).catch(function(err) {
-					console.error("POST 요청 중 오류 발생:", err);
-					MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.")
-					this._getData();
-				}.bind(this));
-				}.bind(this)).catch(function(err) {
-					console.error("CSRF 토큰 요청 중 오류 발생:", err);});
+					// 모든 POST 요청이 완료될 때까지 대기
+					Promise.all(postPromises).then(function() {
+						console.log("모든 POST 요청 완료");
+						//MessageBox.success("작업 지시 처리가 완료되었습니다.");
+						this._getData();
+						
+					}.bind(this)).catch(function(err) {
+						console.error("POST 요청 중 오류 발생:", err);
+						//MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.")
+						this._getData();
+
+					}.bind(this));
+					}.bind(this)).catch(function(err) {
+						console.error("CSRF 토큰 요청 중 오류 발생:", err);});
 				}.bind(this);
 				
 					// 파일 읽기 오류 시
