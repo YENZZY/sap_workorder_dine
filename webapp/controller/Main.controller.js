@@ -24,6 +24,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
 
             this._registerForP13n();
+			var oTable = this.byId("dataTable");
+			this.oTable = oTable;
 			
         },
 
@@ -32,7 +34,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
         },
 
 		_getData: function () {
-			BusyIndicator.show(0);
+			//BusyIndicator.show(0); 전체 로딩바
+			this.oTable.setBusy(true);
 			var oMainModel = this.getOwnerComponent().getModel("dineData"); // cus
 			var oDineModel = this.getOwnerComponent().getModel("mainData"); //dev
 			var oDataModel = this.getOwnerComponent().getModel("dataModel");
@@ -67,6 +70,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				fetchModel("/Product", "productModel", false),
 				fetchModel("/ProductionVersion", "prodVerModel", false),
 				fetchModel("/Plant", "plantModel", false),
+				fetchModel("/MfgOrderGroup", "mfgOrderGroupModel", false),
 				fetchModel("/ProdLvl", "prodLvlModel", true),
 				fetchModel("/SchedPri", "schedPriModel", true)
 			];
@@ -120,9 +124,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						this.setModel(new JSONModel(data), "dataModel");
 					}
 				}
-				BusyIndicator.hide();
+				//BusyIndicator.hide(); 전체 로딩바
+				this.oTable.setBusy(false);
 			}.bind(this)).catch(function(error) {
-				BusyIndicator.hide();
+				//BusyIndicator.hide(); 전체 로딩바
+				this.oTable.setBusy(false);
 				console.error("모델 처리 중 오류 발생:", error);
 			});
 		},		
@@ -366,18 +372,18 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					// 1. 유효성 검사를 수행하는 함수
 					function isValid(pData) {
 						var oSoModel = that.getModel("soModel").getData();
-           				var oDataModel = that.getOwnerComponent().getModel("dataModel").getData();
+           				var oMfgOrderGroupModel = that.getOwnerComponent().getModel("dataModel").getData();
             
 						// 판매 오더의 작업 지시 수량 계산
 						var mfgQty = oSoModel.reduce(function(acc, sdata) {
 							return (sdata.SalesOrder === pData.SalesOrder && sdata.SalesOrderItem === pData.SalesOrderItem)
 								? parseFloat(sdata.OrderQuantity) : acc;
 						}, 0);
-						if (oDataModel.length > 0){
+						if (oMfgOrderGroupModel.length > 0){
 							// 기존 작업 지시 수량 계산
-							var mfgQtyData = oDataModel.reduce(function(acc, data) {
-								return (data.SalesOrder === pData.SalesOrder && data.SalesOrderItem === pData.SalesOrderItem)
-									? acc + (parseFloat(data.MfgOrderPlannedTotalQty) || 0) : acc;
+							var mfgQtyData = oMfgOrderGroupModel.reduce(function(acc, data) {
+								return (data.SalesOrder === pData.SalesOrder && data.SalesOrderItem === pData.SalesOrderItem && data.createdQty)
+									? acc + (parseFloat(data.createdQty) || 0) : acc;
 							}, 0);
 						} else {
 							mfgQtyData = 0;

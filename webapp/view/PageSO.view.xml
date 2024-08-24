@@ -30,7 +30,8 @@
                             suggestionItemSelected="onPageVHSelected"
                             suggestionRows="{
                             path: 'soModel>/'}"
-                            tokenUpdate="onTokenUpdate"
+                            liveChange="onTokenUpdate"
+                            tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>
                                 <Column>
@@ -54,7 +55,8 @@
                             suggestionRows="{
                             path: 'soModel>/'
                             }"
-                            tokenUpdate="onTokenUpdate"
+                            liveChange="onTokenUpdate"
+                            tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>
                                 <Column>

@@ -121,6 +121,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             commonModelData("/MfgOrder", "mfgOrderModel"); 
             commonModelData("/Product", "productModel");
             commonModelData("/Plant", "plantModel");
+            commonModelData("/MfgOrderGroup", "mfgOrderGroupModel");
             rankModelData("/ProdLvl", "prodLvlModel");
             rankModelData("/SchedPri", "schedPriModel");
             
@@ -472,15 +473,16 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     }
                 }
                  // 기생성된 작업 지시 수량 가져오기
-                var oDataModel = this.getOwnerComponent().getModel("dataModel").getData();
+                var oMfgOrderGroupModel = this.getModel("mfgOrderGroupModel").getData(); // 기생성 데이터
                 var mfgQtydata = 0; // 초기화
-                console.log("odamodle",oDataModel);
+                console.log("odamodle",oMfgOrderGroupModel);
                  // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
                 
-                if(oDataModel.length > 0){
-                    oDataModel.forEach(function(data) {
-                        if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey && data.ManufacturingOrder) { // 생산 오더가 있는 데이터 (기생성된 작업 수량)
-                            mfgQtydata += parseFloat(data.MfgOrderPlannedTotalQty) || 0;
+                if(oMfgOrderGroupModel.length > 0){
+                    oMfgOrderGroupModel.forEach(function(data) {
+                        if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey && data.createdQty) { // 생산 오더가 있는 데이터 (기생성된 작업 수량)
+                            console.log("crd",data.createdQty);
+                            mfgQtydata += parseFloat(data.createdQty) || 0;
                         }
                     });
                 }
@@ -607,134 +609,179 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // suggestion 선택 
         onPageVHSelected: function (oEvent) {
-            var oDataModel = this.getOwnerComponent().getModel("dataModel").getData();
-            var oMultiInput = oEvent.getSource();
-            var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
-            console.log("osi",oSelectedItem);
-            var sValueHelpId = oMultiInput.getId();
-            var contextModel ,contextProperty, sKeyData, sTextData, sId; 
-            if(sValueHelpId.includes("prodVerVH")){
-                contextModel = "prodVerModel";
-                contextProperty = "ProductionVersion";
+        var oDataModel = this.getOwnerComponent().getModel("dataModel").getData();
+        var oMultiInput = oEvent.getSource();
+        var oSelectedItem = oEvent.getParameter("selectedRow"); // 선택된 행 가져오기
 
-            } else if(sValueHelpId.includes("salesOrderVH") || sValueHelpId.includes("salesOrderItemVH")){
-                contextModel = "soModel";
-                if(sValueHelpId.includes("salesOrderVH")){
-                    contextProperty = "SalesOrder";
-                } else {
-                    contextProperty = "SalesOrderItem";
-                    sKeyData = "SalesOrderItem";
-                    sTextData = ["Material","Plant", "OrderQuantity"];
-                    sId = ["materialVH", "plantVH", "mfgOrderPlannedTotalQty"];
-                }
-            } else if(sValueHelpId.includes("prodLvlVH")){
-                contextModel = "prodLvlModel";
-                contextProperty = "Referencecodeid";
-                sKeyData = "Referencecodeid";
-                sTextData = "Description";
-                sId = "prodDescription";
+        var sValueHelpId = oMultiInput.getId();
+        var contextModel, contextProperty, sKeyData, sTextData, sId; 
 
-            } else if(sValueHelpId.includes("schedPriVH")){
-                contextModel = "schedPriModel";
-                contextProperty = "Referencecodeid";
-                sKeyData = "Referencecodeid";
-                sTextData = "Description";
-                sId = "schedDescription";
+        if (sValueHelpId.includes("prodVerVH")) {
+            contextModel = "prodVerModel";
+            contextProperty = "ProductionVersion";
 
+        } else if (sValueHelpId.includes("salesOrderVH") || sValueHelpId.includes("salesOrderItemVH")) {
+            contextModel = "soModel";
+            if (sValueHelpId.includes("salesOrderVH")) {
+                contextProperty = "SalesOrder";
+            } else {
+                contextProperty = "SalesOrderItem";
+                sKeyData = "SalesOrderItem";
+                sTextData = ["Material", "Plant", "OrderQuantity"];
+                sId = ["materialVH", "plantVH", "mfgOrderPlannedTotalQty"];
             }
-            if (oSelectedItem) {
-                var oContext = oSelectedItem.getBindingContext(contextModel);
-                var sKey = oContext.getProperty(contextProperty); // 키 값 가져오기
-                var oModel = this.getModel(contextModel);
-                var aData = oModel.getProperty("/");
+        } else if (sValueHelpId.includes("prodLvlVH")) {
+            contextModel = "prodLvlModel";
+            contextProperty = "Referencecodeid";
+            sKeyData = "Referencecodeid";
+            sTextData = "Description";
+            sId = "prodDescription";
 
-                // 현재 MultiInput에 존재하는 토큰들을 가져오기
-                var aExistingTokens = oMultiInput.getTokens();
+        } else if (sValueHelpId.includes("schedPriVH")) {
+            contextModel = "schedPriModel";
+            contextProperty = "Referencecodeid";
+            sKeyData = "Referencecodeid";
+            sTextData = "Description";
+            sId = "schedDescription";
+        }
 
-                    // 중복된 토큰이 있는지 확인
-                    var bTokenExists = aExistingTokens.some(function (oToken) {
-                        return oToken.getKey() === sKey;
-                    });
+        if (oSelectedItem) {
+            var oContext = oSelectedItem.getBindingContext(contextModel);
+            var sKey = oContext.getProperty(contextProperty); // 키 값 가져오기
+            var oModel = this.getModel(contextModel);
+            var aData = oModel.getData();
 
-                    // 판매 문서 제품, 플랜트 설정
-                    if (contextProperty === "SalesOrderItem") {
-                        var soTokens = this.selectedSalesOrder; // 선택된 판매 주문 토큰 배열
-                        var materialText = "";
-                        var plantText = "";
-                        var mfgQtyText = "";
+            // 현재 MultiInput에 존재하는 토큰들을 가져오기
+            var aExistingTokens = oMultiInput.getTokens();
+
+            // 중복된 토큰이 있는지 확인
+            var bTokenExists = aExistingTokens.some(function (oToken) {
+                return oToken.getKey() === sKey;
+            });
+
+            if (contextProperty === "SalesOrder") {
+                var salesToken = sKey || []; // 선택된 판매 주문 토큰 배열
+                console.log("salesToken", salesToken);
+
+                // SalesOrderItem MultiInput을 필터링
+                 var aFilteredItems = aData.filter(function (item) {
+                     return salesToken.includes(item.SalesOrder); // SalesOrder가 선택된 토큰 배열에 포함된 경우
+                 });
+                // SalesOrderItem MultiInput의 suggestion 필터링
+                var soi = "";
+                aFilteredItems.forEach(function (item) {
+                   soi =  item.SalesOrderItem;
+                    
+                 });
+                 console.log("soi",soi);
+                 var salesItemId = this.byId("salesOrderItemVH");
+                 if (salesItemId) {
+                     var oBinding = salesItemId.getBinding("suggestionRows");
+                    console.log("oBind",oBinding);
+                     if (oBinding) {
+                        // SalesOrder 필터와 SalesOrderItem 필터를 결합
+                        var salesOrderFilter = new Filter("SalesOrder", FilterOperator.EQ, sKey);
+                        var salesOrderItemFilter = new Filter("SalesOrderItem", FilterOperator.EQ, soi);
                 
-                        // 모델 데이터에서 일치하는 항목을 찾기
-                        for (var i = 0; i < aData.length; i++) {
-                            if (soTokens.includes(aData[i]["SalesOrder"])) {
-                                if (aData[i][sKeyData] === sKey) {
-                                    materialText = aData[i][sTextData[0]]; // 첫 번째 텍스트 데이터
-                                    plantText = aData[i][sTextData[1]];    // 두 번째 텍스트 데이터
-                                    mfgQtyText = (aData[i][sTextData[2]]); 
-                                   
-                                    break;
-                                }
-                            }
-                        }
-                
-                        // 두 개의 입력 필드에 값 설정
-                        var oMaterialInput = this.byId(sId[0]);
-                        var oPlantInput = this.byId(sId[1]);
-                        var oMfgQtyInput = this.byId(sId[2]);
-
-                        var mfgQtydata = 0; // 초기화
-                 
-                        // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
-                        oDataModel.forEach(function(data) {
-                            if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey && data.ManufacturingOrder) { // 생산 오더가 있는 데이터 (기생성된 작업 수량)
-                                mfgQtydata += parseFloat(data.MfgOrderPlannedTotalQty) || 0;
-                            }
+                        // 두 필터를 AND로 결합
+                        var combinedFilter = new Filter({
+                            filters: [salesOrderFilter, salesOrderItemFilter],
+                            and: true
                         });
-                 
-                        // mfgQtydata를 this.mfgQtydata로 저장하여 사용
-                        this.mfgQtydata = mfgQtydata;
-                        if (oMaterialInput) {
-                            oMaterialInput.setValue(materialText || ""); // 값이 없으면 빈 문자열로 설정
-                        }
                 
-                        if (oPlantInput) {
-                            oPlantInput.setValue(plantText || ""); // 값이 없으면 빈 문자열로 설정
-                        }
-
-                        if (oMfgQtyInput) {
-                            oMfgQtyInput.setValue(mfgQtyText ? (mfgQtyText - this.mfgQtydata) || 0 : 0); // 기생성된 작업 수량(값이 없으면 빈 문자열로 설정)
-                        }
-                        console.log("omftest",mfgQtyText);
-                        console.log("mfgtest",this.mfgQtyData);
+                        // 필터 적용
+                        oBinding.filter(combinedFilter);
+                
+                        // 바인딩 새로 고침
+                        oBinding.refresh(true);
                     }
-                    // 생산 순위 내역 및 우선 순위 내역 input 데이터 추가
-                    if(contextModel === "prodLvlModel" || contextModel === "schedPriModel"){
-                        var inputText;
-                        for (var i = 0; i < aData.length; i++) {
-                            if (aData[i][sKeyData] === sKey) {
-                                inputText = aData[i][sTextData];
-                                break;
-                            }
-                        }
-                        var oInput = this.byId(sId);
-                        console.log("oInput", oInput);
-                        console.log("inputText", inputText);
-                        oInput.setValue(inputText);
-                    }
-
-                    // 중복된 토큰이 없을 경우에만 새 토큰을 추가
-                    if (!bTokenExists) {
-                        oMultiInput.addToken(new Token({
-                            key: sKey,
-                            text: sKey
-                        }));
-                    } else {
-                        // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
-                        MessageToast.show("이미 추가된 토큰입니다.");
-                    }
-
-                    // 입력 값을 지우기 (선택 후 텍스트 박스를 비움)
-                    oMultiInput.setValue("");
+                 }
             }
+
+            if (contextProperty === "SalesOrderItem") {
+                var soTokens = this.selectedSalesOrder; // 선택된 판매 주문 토큰 배열
+                var materialText = "";
+                var plantText = "";
+                var mfgQtyText = "";
+
+                // 모델 데이터에서 일치하는 항목을 찾기
+                var selectedOrderItem = aData.find(function (item) {
+                    return item.SalesOrderItem === sKey ;
+                });
+
+                if (selectedOrderItem) {
+                    materialText = selectedOrderItem.Material;
+                    plantText = selectedOrderItem.Plant;
+                    mfgQtyText = selectedOrderItem.OrderQuantity;
+                }
+
+                // 두 개의 입력 필드에 값 설정
+                var oMaterialInput = this.byId(sId[0]);
+                var oPlantInput = this.byId(sId[1]);
+                var oMfgQtyInput = this.byId(sId[2]);
+
+                var mfgQtydata = 0; // 초기화
+
+                // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
+
+                if(oDataModel.length > 0){
+                    oDataModel.forEach(function(data) {
+                        if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey && data.ManufacturingOrder) { // 생산 오더가 있는 데이터 (기생성된 작업 수량)
+                            mfgQtydata += parseFloat(data.MfgOrderPlannedTotalQty) || 0;
+                        }else if (data.SalesOrder === salesToken && data.SalesOrderItem === sKey && data.ManufacturingOrder){ // 생산 오더가 있는 데이터 (기생성된 작업 수량)
+                            mfgQtydata += parseFloat(data.MfgOrderPlannedTotalQty) || 0;
+                        }
+                    });
+                }
+                    // mfgQtydata를 this.mfgQtydata로 저장하여 사용
+                    this.mfgQtydata = mfgQtydata;
+                    if (oMaterialInput) {
+                        oMaterialInput.setValue(materialText || ""); // 값이 없으면 빈 문자열로 설정
+                    }
+
+                    if (oPlantInput) {
+                        oPlantInput.setValue(plantText || ""); // 값이 없으면 빈 문자열로 설정
+                    }
+
+                    if (oMfgQtyInput) {
+                        oMfgQtyInput.setValue(mfgQtyText ? (mfgQtyText - this.mfgQtydata) || 0 : 0); // 기생성된 작업 수량(값이 없으면 빈 문자열로 설정)
+                    }
+                    console.log("omftest", mfgQtyText);
+                    console.log("mfgtest", this.mfgQtydata);
+                
+                }
+            }
+                    
+
+                // 생산 순위 내역 및 우선 순위 내역 input 데이터 추가
+                if (contextModel === "prodLvlModel" || contextModel === "schedPriModel") {
+                    var inputText;
+                    for (var i = 0; i < aData.length; i++) {
+                        if (aData[i][sKeyData] === sKey) {
+                            inputText = aData[i][sTextData];
+                            break;
+                        }
+                    }
+                    var oInput = this.byId(sId);
+                    console.log("oInput", oInput);
+                    console.log("inputText", inputText);
+                    oInput.setValue(inputText);
+                }
+
+                // 중복된 토큰이 없을 경우에만 새 토큰을 추가
+                if (!bTokenExists) {
+                    oMultiInput.addToken(new Token({
+                        key: sKey,
+                        text: sKey
+                    }));
+                } else {
+                    // 중복된 토큰이 있는 경우, 사용자에게 메시지 표시 (선택 사항)
+                    MessageToast.show("이미 추가된 토큰입니다.");
+                }
+
+                // 입력 값을 지우기 (선택 후 텍스트 박스를 비움)
+                oMultiInput.setValue("");
+
         },
 
         // 포커스 아웃 이벤트 핸들러
@@ -787,7 +834,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         onTokenUpdate: function (oEvent) {
             var oMultiInput = oEvent.getSource();
             var aTokens = oMultiInput.getTokens();
-            if(this.selectedSalesOrder===0){
+            console.log("oMulti",oMultiInput);
+            if(this.selectedSalesOrder === 0){
                 var salesItemToken = this.byId("salesOrderItemVH").setTokens([]);
                 console.log("sit",salesItemToken);
             }
@@ -802,16 +850,30 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         onChangeToken: function (oEvent) {
             var oMultiInput = oEvent.getSource();
             console.log("oev",oMultiInput);
-            var aTokens = oMultiInput.getTokens();
+            var aTokens = oMultiInput.getTokens();``
 
             
             if (oMultiInput.getId().includes("prodLvlVH")){
                 this.byId("prodDescription").setValue('');
+
             } else if (oMultiInput.getId().includes("schedPriVH")){
                 this.byId("schedDescription").setValue('');
+
+            } else if (oMultiInput.getId().includes("salesOrderItemVH")){
+                this.byId("materialVH").setValue('');
+                this.byId("plantVH").setValue('');
+                this.byId("prodVerVH").setValue('');
+                this.byId("mfgOrderPlannedTotalQty").setValue('');
+
+            } else if (oMultiInput.getId().includes("salesOrderVH")){
+                this.byId("salesOrderItemVH").setTokens([]);
+                this.byId("materialVH").setValue('');
+                this.byId("plantVH").setValue('');
+                this.byId("prodVerVH").setValue('');
+                this.byId("mfgOrderPlannedTotalQty").setValue('');
             }
         },
-        
+
         // value help 끝
 
         // 오더 유형 타입 내역 데이터
