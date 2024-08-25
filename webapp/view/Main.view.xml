@@ -57,6 +57,7 @@
                                 fileType="XLSX,xlsx"
                                 change="onUpload"
                             />
+                            <m:Button icon="sap-icon://excel-attachment" press="onDownload"/>
                             <m:Button icon="sap-icon://action-settings" press="openPersoDialog"/>
                         </m:OverflowToolbar>
                     </extension>

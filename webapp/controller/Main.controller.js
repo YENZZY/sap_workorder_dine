@@ -11,13 +11,16 @@ sap.ui.define([
 	'sap/ui/model/Sorter',
 	'sap/ui/core/library',
 	'sap/m/table/ColumnWidthController',
-	'sap/ui/core/BusyIndicator',
+	'sap/ui/export/library',
+	'sap/ui/export/Spreadsheet',
 	'dinewkorder/js/xlsx',
     'dinewkorder/js/jszip',
 	
 ],
-function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, CoreLibrary, ColumnWidthController, BusyIndicator) {
+function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionController, SortController, GroupController, MetadataHelper, Sorter, CoreLibrary, ColumnWidthController, exportLibrary, Spreadsheet) {
     "use strict";
+
+	var EdmType = exportLibrary.EdmType;
 
     return Controller.extend("dinewkorder.controller.Main", {
         onInit: function () {
@@ -189,7 +192,47 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		// 		// 예: 선택 해제, UI 업데이트 등
 		// 	});
 		// },		
+		
+		// 엑셀 다운로드
+		onDownload : function () {
+			var oSettings, oSheet;
+			var aCols = this.createColumnConfig();
+			oSettings = {
+				workbook: {
+					columns: aCols,
+					hierarchyLevel: 'Level' // 계층 구조 레벨 설정
+				},
+				dataSource: [0], // 빈 데이터 배열
+				fileName: '다인정공_작업지시 생성_템플릿.xlsx', // 다운로드 파일 이름 설정
+				worker: false // 워커 사용 여부 (테이블 안 보이게)
+			};
 
+			// 엑셀 파일을 생성하고 다운로드
+			oSheet = new Spreadsheet(oSettings);
+			oSheet.build().finally(function() {
+				oSheet.destroy();
+			});
+		},
+
+		// 엑셀파일로 데이터 내보내기
+        createColumnConfig: function() {
+            var aCols = [];
+            // 컬럼 라벨과 속성을 정의
+            var labels = ['플랜트', '판매문서', '판매문서 품목', '제품코드', '오더유형', '생산버전', '작업지시 수량', '기본 시작일', '로트 사이즈', '생산순위', '우선순위', '생산주석'];
+            var properties = ['ProductionPlant', 'SalesOrder', 'SalesOrderItem', 'Material', 'ManufacturingOrderType', 'ProductionVersion', 'TotalQuantity', 'MfgOrderPlannedStartDate', 'LotSize', 'YY1_PROD_RANK_ORD', 'YY1_PRIO_RANK_ORD', 'YY1_PROD_TEXT_ORD'];
+        
+            // 라벨과 속성을 매핑하여 컬럼 설정 배열을 생성
+            labels.forEach(function (label, index) {
+                aCols.push({
+                    label: label,
+                    property: properties[index],
+                    type: EdmType.String
+                });
+            });
+            return aCols; // 컬럼 설정 배열 반환
+        },        
+
+		// 엑셀 업로드
 		onUpload: function (oEvent) {
 			var file = oEvent.getParameter("files")[0]; // 선택된 파일 가져오기
 			if (file && window.FileReader) {
@@ -426,7 +469,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 							}
 						}
 
+						//로트 사이즈 마이너스 오류 처리
 						if (parseFloat(pData.TotalQuantity) < 0) {
+							return false;
+						}
+
+						// DN01(수주) 아닌데 판매문서와 판매문서 품목이 있는 경우 
+						if (pData.ManufacturingOrderType != "DN01" && pData.SalesOrder && pData.SalesOrderItem) {
 							return false;
 						}
 
