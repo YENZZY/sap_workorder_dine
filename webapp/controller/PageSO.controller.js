@@ -833,7 +833,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             }
         },
 
-        onTokenUpdate: function (oEvent) {
+        onLiveChange: function (oEvent) {
             var oMultiInput = oEvent.getSource();
             var aTokens = oMultiInput.getTokens();
             console.log("oMulti",oMultiInput);

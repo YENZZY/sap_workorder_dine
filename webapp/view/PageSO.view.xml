@@ -30,7 +30,7 @@
                             suggestionItemSelected="onPageVHSelected"
                             suggestionRows="{
                             path: 'soModel>/'}"
-                            liveChange="onTokenUpdate"
+                            liveChange="onLiveChange"
                             tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>
@@ -55,7 +55,7 @@
                             suggestionRows="{
                             path: 'soModel>/'
                             }"
-                            liveChange="onTokenUpdate"
+                            liveChange="onLiveChange"
                             tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>
@@ -116,7 +116,7 @@
                             suggestionRows="{
                             path: 'prodVerModel>/'
                             }"
-                            liveChange="onTokenUpdate"
+                            liveChange="onLiveChange"
                         >
                             <suggestionColumns>
                                 <Column>
@@ -150,7 +150,7 @@
                             suggestionRows="{
                             path: 'prodLvlModel>/'
                             }"
-                            liveChange="onTokenUpdate"
+                            liveChange="onLiveChange"
                             tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>
@@ -181,7 +181,7 @@
                             suggestionRows="{
                             path: 'schedPriModel>/'
                             }"
-                            liveChange="onTokenUpdate"
+                            liveChange="onLiveChange"
                             tokenUpdate="onChangeToken"
                         >
                             <suggestionColumns>

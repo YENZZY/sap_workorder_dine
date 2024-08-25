@@ -15,7 +15,7 @@ sap.ui.define([
     'sap/ui/model/Filter',
     'sap/ui/model/FilterOperator',
     'sap/m/DatePicker',
-    'sap/m/Select',
+    'sap/m/Select'
 ],
 function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchField, TypeString, Label, MColumn, UIColumn, Text, Input, Token, Filter, FilterOperator, DatePicker, Select) {
     "use strict";
@@ -654,14 +654,12 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             // 해당 ID의 MultiInput 인스턴스 가져오기
             var oMultiInput = this.byId(inputId);
             if(oMultiInput){
-            // 텍스트 필드를 지우기
-            oMultiInput.setValue("");
+                oMultiInput.setValue("");
             }
         },
 
-        onTokenUpdate: function (oEvent) {
+        onLiveChange: function (oEvent) {
             var oMultiInput = oEvent.getSource();
-            console.log("oev",oMultiInput);
             var aTokens = oMultiInput.getTokens();
             if(this.selectedSalesOrder===0){
                 var salesItemToken = this.byId("salesOrderItemVH").setTokens([]);
