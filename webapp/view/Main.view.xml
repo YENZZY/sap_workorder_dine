@@ -36,8 +36,9 @@
                     rowMode="Auto"
                     ariaLabelledBy="title"
                     rows="{dataModel>/}"
+                    sap.ui.fl:flexibility="sap/m/flexibility/EngineFlex"
                     width="auto"
-                     selectionMode="None"
+                    selectionMode="None"
                 >
                     <extension>
                         <m:OverflowToolbar>
@@ -291,19 +292,6 @@
                                 <m:Text text="{dataModel>Message}"/>
                             </template>
                         </Column>
-                        <!-- <Column
-                            id="action_col"
-                            headerMenu="menu"
-                            resizable="true"
-                            autoResizable="true"
-                        >
-                            <template>
-                                <m:Button 
-                                icon="sap-icon://navigation-right-arrow"
-                                press="onMove"
-                                />
-                            </template>
-                        </Column> -->
                     </columns>
                 </Table>
             </f:content>

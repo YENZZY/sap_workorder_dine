@@ -741,11 +741,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					key: "yy1ProdText_col",
 					label: "생산 주석",
 					path: "dataModel>Yy1ProdText"
-				},
-				{
-					key: "message_col",
-					label: "메시지",
-					path: "dataModel>Message"
 				}
 			]);
 
@@ -763,8 +758,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				"productionVersion_col": "11rem",
 				"yy1ProdRankOrd_col": "11rem",
 				"yy1PrioRankOrd_col": "11rem",
-				"yy1ProdText_col": "11rem",
-				"message_col": "11rem"
+				"yy1ProdText_col": "11rem"
 			};
 
 			Engine.getInstance().register(oTable, {

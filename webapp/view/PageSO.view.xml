@@ -10,7 +10,7 @@
         <f:title>
             <f:DynamicPageTitle>
                 <f:heading>
-                    <Title text="단일 생성(수주)" titleStyle="H2"/>
+                    <Text text="단일 생성 (수주)"/>
                 </f:heading>
             </f:DynamicPageTitle>
         </f:title>
