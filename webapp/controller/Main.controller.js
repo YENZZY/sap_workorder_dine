@@ -236,7 +236,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 								YY1_PROD_TEXT_ORD: row["생산주석"] || row["YY1_PROD_TEXT_ORD"]
 							};
 						});
-		
+
 						saveProdOrder = saveProdOrder.concat(filteredData.flatMap(function (saveData) {
 							var orders = [];
 							var lotSize = saveData.LotSize ? parseFloat(saveData.LotSize) : parseFloat(saveData.TotalQuantity);
@@ -249,7 +249,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 									Object.entries(obj).map(([key, value]) => [key, value && key !== 'MfgOrderPlannedStartDate' ? value.toString() : value])
 								);
 							}
-
 							if (lotSize > 0 && totalQuantity > lotSize) {
 								// 로트 사이즈를 사용하여 여러 개의 작업 지시 생성
 								for (var i = 0; i < Math.floor(totalQuantity / lotSize); i++) {
@@ -288,6 +287,22 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 										Yy1ProdText: saveData.YY1_PROD_TEXT_ORD
 									}));
 								}
+							} else if (lotSize < 0) {
+								// 로트 사이즈를 사용하여 여러 개의 작업 지시 생성
+									orders.push(convertValuesToString({
+										MfgOrderType: (!saveData.SalesOrder || !saveData.SalesOrderItem ? "2" : "1"),
+										ProductionPlant: saveData.ProductionPlant,
+										SalesOrder: saveData.SalesOrder,
+										SalesOrderItem: saveData.SalesOrderItem,
+										Material: saveData.Material,
+										ManufacturingOrderType: saveData.ManufacturingOrderType,
+										ProductionVersion: saveData.ProductionVersion,
+										MfgOrderPlannedTotalQty: lotSize,
+										MfgOrderPlannedStartDate: saveData.MfgOrderPlannedStartDate, // 날짜 변환
+										Yy1ProdRankOrd: saveData.YY1_PROD_RANK_ORD,
+										Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD,
+										Yy1ProdText: saveData.YY1_PROD_TEXT_ORD
+									}));
 							} else {
 								// 로트 사이즈가 없거나 전체 수량이 로트 사이즈보다 작을 때
 								orders.push(convertValuesToString({
@@ -304,8 +319,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 									Yy1PrioRankOrd: saveData.YY1_PRIO_RANK_ORD,
 									Yy1ProdText: saveData.YY1_PROD_TEXT_ORD
 								}));
-							}
-		
+							} 
 							return orders;
 						}));
 					});
@@ -368,11 +382,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					// 1. 오더 유형이 DN01 -> 판매 오더와 판매 오더 문서 없으면 Error
 					// 2. 오더 유형이 DN01 일 때 작업지시 수량 > (판매 오더의 작업지시 수량 - 기생성된 작업수량) 이면 Error
 					// 3. 오더 유형이 DN01 아닐 때 작업지시 수량 > 판매 오더의 작업지시 수량 이면 Error
+					// 4. 로트사이즈가 0 보다 작을 때 Error
 					var that = this;
 					// 1. 유효성 검사를 수행하는 함수
 					function isValid(pData) {
+						console.log("pdata",pData);
 						var oSoModel = that.getModel("soModel").getData();
-           				var oMfgOrderGroupModel = that.getOwnerComponent().getModel("dataModel").getData();
+           				var oMfgOrderGroupModel = that.getOwnerComponent().getModel("mfgOrderGroupModel").getData();
             
 						// 판매 오더의 작업 지시 수량 계산
 						var mfgQty = oSoModel.reduce(function(acc, sdata) {
@@ -408,6 +424,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 							if (parseFloat(pData.TotalQuantity) > parseFloat(mfgQty)) {
 								return false; // 작업 지시 수량이 판매 오더의 작업 지시 수량보다 크면 유효하지 않음
 							}
+						}
+
+						if (parseFloat(pData.TotalQuantity) < 0) {
+							return false;
 						}
 
 						return true; // 모든 조건을 만족하면 유효함

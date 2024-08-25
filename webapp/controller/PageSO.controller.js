@@ -234,7 +234,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         console.log("this.selectedSalesOrder",this.selectedSalesOrder);
                         oTable.bindAggregation("rows", {
                             path: `${modelName}>/`,
-                            filters: [new Filter("SalesOrder", FilterOperator.EQ, this.selectedSalesOrder)],
+                            filters: [new Filter("SalesOrder", FilterOperator.EQ, this.selectedSalesOrder ||  this.soSuggestionToken)],
                             events: {
                                 dataReceived: function () {
                                     oDialogSuggestions.update();
@@ -428,6 +428,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             oDialogSuggestions.data("filterPaths", filterPaths);
                 oDialogSuggestions.open();
             }.bind(this));
+            console.log("this.load",this.loadFragment);
             this.initializeValueHelpInputs();
         },
 
@@ -451,7 +452,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
              if (this.oMultiInputSuggestion.getId().includes("salesOrderItemVH")) {
                 var oModel = this.getModel("soModel");
                 var aData = oModel.getProperty("/");
-                var soTokens = this.selectedSalesOrder; // 선택된 판매 주문 토큰 배열
+                var soTokens = this.selectedSalesOrder || this.soSuggestionToken; // 선택된 판매 주문 토큰 배열
                 var materialText = "";
                 var plantText = "";
                 var mfgQtyText = 0;
@@ -674,6 +675,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     
                  });
                  console.log("soi",soi);
+                 this.soSuggestionToken = sKey;
                  var salesItemId = this.byId("salesOrderItemVH");
                  if (salesItemId) {
                      var oBinding = salesItemId.getBinding("suggestionRows");
