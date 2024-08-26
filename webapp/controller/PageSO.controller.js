@@ -100,7 +100,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         var aData = filteredData; // 필터링된 데이터 사용
                         if (aData.length > 0) {
                             var sSelectedKey = aData[0].ManufacturingOrderType; // 첫 번째 항목의 ManufacturingOrderType
-                            console.log("Selected Key", sSelectedKey);
                         
                             // 첫 번째 항목의 ManufacturingOrderTypeName 가져오기
                             var sManufacturingOrderTypeName = aData.find(function(item) {
@@ -143,6 +142,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // valuehelp
         onPageVH: function (oEvent) {
+            this.onPageVHSearch.bind(this);
             // ValueHelpDialog의 ID에 따라 변수를 설정
             var sValueHelpId = oEvent.getSource().getId();
             var filterName, label, keys, modelName, columnLabels, inputId, filterPaths;
@@ -191,7 +191,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             } 
             var keyId = sValueHelpId.includes("salesOrderItemVH") ? keys[1] : (sValueHelpId.includes("prodLvlVH") || sValueHelpId.includes("schedPriVH") ? keys[2] : keys[0]);
-            console.log("key",keyId);
             this.oSuggestion = new MultiInput();
             this.oSearchSuggestion = new SearchField();
         
@@ -214,7 +213,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         maxLength: 7
                     })
                 }]);
-                console.log("key",keyId);
                 // FilterBar의 기본 검색 설정
                 oFilterBar.setFilterBarExpanded(false);
                 oFilterBar.setBasicSearch(this.oSearchSuggestion);
@@ -231,7 +229,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     if (oTable.bindRows) {
                          // 필터링 적용
                     if (sValueHelpId.includes("salesOrderItemVH")) {
-                        console.log("this.selectedSalesOrder",this.selectedSalesOrder);
                         oTable.bindAggregation("rows", {
                             path: `${modelName}>/`,
                             filters: [new Filter("SalesOrder", FilterOperator.EQ, this.selectedSalesOrder ||  this.soSuggestionToken)],
@@ -408,8 +405,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     var oMultiInput = this.byId("salesOrderItemVH");
 
                     if(oMultiInput){
-                        console.log("om",oMultiInput);
-                        console.log("dd",this.selectedSalesOrder);
                         oMultiInput.getBinding("suggestionRows").filter(new Filter("SalesOrder", FilterOperator.EQ, this.selectedSalesOrder));
                     }
                     oDialogSuggestions.update();
@@ -426,9 +421,9 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 }
                 // 데이터 속성으로 filterPaths 전달
             oDialogSuggestions.data("filterPaths", filterPaths);
+            oDialogSuggestions.data("inputId", inputId);
                 oDialogSuggestions.open();
             }.bind(this));
-            console.log("this.load",this.loadFragment);
             this.initializeValueHelpInputs();
         },
 
@@ -476,13 +471,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                  // 기생성된 작업 지시 수량 가져오기
                 var oMfgOrderGroupModel = this.getModel("mfgOrderGroupModel").getData(); // 기생성 데이터
                 var mfgQtydata = 0; // 초기화
-                console.log("odamodle",oMfgOrderGroupModel);
                  // 데이터 모델에서 기 생성된 작업 지시 수량을 더하기
-                
                 if(oMfgOrderGroupModel.length > 0){
                     oMfgOrderGroupModel.forEach(function(data) {
                         if (data.SalesOrder === soTokens[0] && data.SalesOrderItem === sKey && data.createdQty) { // 생산 오더가 있는 데이터 (기생성된 작업 수량)
-                            console.log("crd",data.createdQty);
                             mfgQtydata += parseFloat(data.createdQty) || 0;
                         }
                     });
@@ -505,7 +497,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     oMfgQtyInput.setValue(mfgQtyText ? (mfgQtyText - this.mfgQtydata) || 0 : 0); // 값이 없으면 빈 문자열로 설정
                 }
             }
-            console.log("oMfgQtyInput",oMfgQtyInput);
 
             // 생산 순위 내역 및 우선 순위 내역 input 데이터 추가
             if(this.oMultiInputSuggestion.getId().includes("prodLvlVH")){
@@ -557,11 +548,12 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         onPageVHSearch: function (oEvent) {
             // 데이터 속성에서 filterPaths 가져오기
             var filterPaths = this.vhdSuggestions.data("filterPaths");
-        
+            // value help 구분하는 ID를 가져오기
+            var sValueHelpId = this.vhdSuggestions.data("inputId");
             // SearchField의 검색어와 선택된 필터들을 가져오기
             var sSearchQuery = this.oSearchSuggestion.getValue();
             var aSelectionSet = oEvent.getParameter("selectionSet");
-            
+            var aFilters = [];
             // 필터를 생성
             var aFilters = aSelectionSet ? aSelectionSet.reduce(function (aResult, oControl) {
                 if (oControl.getValue()) {
@@ -573,7 +565,17 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 }
                 return aResult;
             }, []) : [];
-        
+            
+             // ID가 "salesOrderItemVH"를 포함하는 경우에 대한 필터 추가
+            if (sValueHelpId.includes("salesOrderItemVH")) {
+                // 선택된 SalesOrder 값을 이용하여 필터를 추가
+                aFilters.push(new Filter({
+                    path: "SalesOrder",
+                    operator: FilterOperator.EQ,
+                    value1: this.selectedSalesOrder || this.soSuggestionToken
+                }));
+            }
+
             // 검색어를 기반으로 필터 추가
             if (sSearchQuery) {
                 var searchFilters = filterPaths.map(function (path) {
@@ -662,7 +664,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
             if (contextProperty === "SalesOrder") {
                 var salesToken = sKey || []; // 선택된 판매 주문 토큰 배열
-                console.log("salesToken", salesToken);
 
                 // SalesOrderItem MultiInput을 필터링
                  var aFilteredItems = aData.filter(function (item) {
@@ -674,12 +675,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                    soi =  item.SalesOrderItem;
                     
                  });
-                 console.log("soi",soi);
                  this.soSuggestionToken = sKey;
                  var salesItemId = this.byId("salesOrderItemVH");
                  if (salesItemId) {
                      var oBinding = salesItemId.getBinding("suggestionRows");
-                    console.log("oBind",oBinding);
                      if (oBinding) {
                         // SalesOrder 필터와 SalesOrderItem 필터를 결합
                         var salesOrderFilter = new Filter("SalesOrder", FilterOperator.EQ, sKey);
@@ -748,9 +747,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     if (oMfgQtyInput) {
                         oMfgQtyInput.setValue(mfgQtyText ? (mfgQtyText - this.mfgQtydata) || 0 : 0); // 기생성된 작업 수량(값이 없으면 빈 문자열로 설정)
                     }
-                    console.log("omftest", mfgQtyText);
-                    console.log("mfgtest", this.mfgQtydata);
-                
                 }
             }
                     
@@ -765,8 +761,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                         }
                     }
                     var oInput = this.byId(sId);
-                    console.log("oInput", oInput);
-                    console.log("inputText", inputText);
                     oInput.setValue(inputText);
                 }
 
@@ -836,10 +830,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         onLiveChange: function (oEvent) {
             var oMultiInput = oEvent.getSource();
             var aTokens = oMultiInput.getTokens();
-            console.log("oMulti",oMultiInput);
             if(this.selectedSalesOrder === 0){
                 var salesItemToken = this.byId("salesOrderItemVH").setTokens([]);
-                console.log("sit",salesItemToken);
             }
             // 단일 토큰만 허용하도록 설정
             if (aTokens.length > 0) {
@@ -851,9 +843,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         // 토큰 지울 떄 input 값 지우기
         onChangeToken: function (oEvent) {
             var oMultiInput = oEvent.getSource();
-            console.log("oev",oMultiInput);
-            var aTokens = oMultiInput.getTokens();``
-
             
             if (oMultiInput.getId().includes("prodLvlVH")){
                 this.byId("prodDescription").setValue('');
@@ -892,18 +881,15 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                     break;
                 }
             }
-            console.log("sManufacturingOrderTypeName",sManufacturingOrderTypeName);
             // Input 필드에 ManufacturingOrderTypeName 설정
             var oInput = this.byId("mfgOrderTypeName"); 
             oInput.setValue(sManufacturingOrderTypeName);
-            console.log("oi",oInput);
         },
 
         // 저장
         onSave: function () {
             // 로트 사이즈 값 가져오기
             var lotSize = this.byId("lotSize").getValue();
-            console.log("lotsize",lotSize);
             // 입력 값을 가져오는 함수
             var getInputValue = function(id, defaultValue) {
                 // 특정 ID의 토큰 값을 가져와 첫 번째 토큰의 키 값을 반환하거나 기본값을 반환
@@ -932,7 +918,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             var prodRankOrd = getInputValue("prodLvlVH"); // 생산 순위
             var prioRankOrd = getInputValue("schedPriVH"); // 우선 순위
             var prodText = getValue("prodAnnotaion"); // 생산 주석
-            console.log("mfgOrderPlannedStartDate",mfgOrderPlannedStartDate);
             this.mfgOrderPlannedStartDate = mfgOrderPlannedStartDate;
             
             // 필수 입력값 검증
@@ -1012,7 +997,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             if (remainderQty > 0) {
                 this.oDataArray.push(createOrderData(remainderQty.toString())); // 나머지 수량에 대한 작업 지시 데이터 추가
             }
-            console.log("odataarray",oDataArray);
             // 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
             function toDateFormat(dateString) {
                 // Date 객체를 생성
@@ -1064,14 +1048,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 };
             });
 
-            console.log("postArray", postArray); 
-
             this.csrfToken = "";
 
             // CSRF 토큰을 가져오는 함수 호출
             this.getCSRFToken().then(function(token) {
                 this.csrfToken = token; // CSRF 토큰 저장
-                console.log("token", this.csrfToken);
                 
                 // POST 요청을 보내는 함수 호출
                 var postPromises = postArray.map(function(data) {  
@@ -1082,11 +1063,11 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 // 모든 POST 요청이 완료될 때까지 대기
                 Promise.all(postPromises)
                     .then(function() {
-                        //MessageBox.success("작업 지시 생성이 완료되었습니다.");
+                        MessageBox.success("작업 지시 생성이 완료되었습니다.");
                         console.log("모든 POST 요청 완료");
                     }.bind(this))
                     .catch(function(err) {
-                        //MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
+                        MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.");
                         console.error("POST 요청 중 오류 발생:", err);
                     }.bind(this));
             }.bind(this)).catch(function(err) {
@@ -1095,7 +1076,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
         },
         
         postProductionOrder: function(data) {
-            console.log("data", data);
             // `$.ajax`를 `Promise`로 래핑
             return new Promise(function(resolve, reject) {
                 $.ajax({
@@ -1128,7 +1108,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             
         // 성공 시 처리 함수 (예: 화면 업데이트)
         handleSuccess: function(response) {
-            console.log("Response:", response.d);
             var dataArray = response.d;
             var updatedOData = {
                 Status: "생성", // 생성
@@ -1148,18 +1127,15 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 Message: ""
             };
 
-            console.log("업데이트 값:", updatedOData);
             var oDataModel = this.getOwnerComponent().getModel("dataModel");
             var existingData = oDataModel.getData() || [];
             var updatedData = [];
             if (Array.isArray(existingData)) {
                 // existingData가 배열인 경우, 배열을 병합
                 updatedData = existingData.concat([updatedOData]);
-                console.log("updatedData",updatedData);
             } else {
                 // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
                 updatedData = [updatedOData];
-                console.log("updatedData2",[updatedData]);
             }
             oDataModel.setData(updatedData);
             this.setModelData();
@@ -1168,9 +1144,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
 
         // 오류 시 처리 함수
         handleError: function(xhr, requestData) {
-            console.log("Request Data on Error:", requestData); // 요청 데이터 확인
-           // console.log("index in handleError", index); // 인덱스 확인
-        
             // 메인 모델 가져오기
             var error = "";
             try {
@@ -1180,7 +1153,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
             }
             // 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
             var errorMessage = "에러 메시지 : " + error;
-            console.log("Error Message:", errorMessage);
         
             var updatedOData = {
                 Status: "에러", // 에러
@@ -1199,18 +1171,15 @@ function (Controller, JSONModel, MessageBox, MessageToast, MultiInput, SearchFie
                 Yy1ProdText: requestData.YY1_PROD_TEXT_ORD,
                 Message: errorMessage
             };
-            console.log("Updated Error Data:", updatedOData);
             var oDataModel = this.getOwnerComponent().getModel("dataModel");
             var existingData = oDataModel.getData() || [];
             var updatedData = [];
             if (Array.isArray(existingData)) {
                 // existingData가 배열인 경우, 배열을 병합
                 updatedData = existingData.concat([updatedOData]);
-                console.log("updatedData",updatedData);
             } else {
                 // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
                 updatedData = [updatedOData];
-                console.log("updatedData2",[updatedData]);
             }
             oDataModel.setData(updatedData);
             this.setModelData();

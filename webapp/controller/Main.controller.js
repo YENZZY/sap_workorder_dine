@@ -58,7 +58,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				return this._getODataRead(model, url).then(function(data) {
 					var oModel = new JSONModel(data);
 					this.getOwnerComponent().setModel(oModel, modelName);
-					console.log("modelss",this.getModel(modelName),modelName);
 					
 				}.bind(this)).catch(function(error) {
 					console.error("데이터를 가져오는 데 실패했습니다:", url, error);
@@ -152,7 +151,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		// 	var oDataTable = this.byId("dataTable");
 		// 	var aSelectedIndices = oDataTable.getSelectedIndices(); // 선택된 항목의 인덱스를 가져오기
 		// 	var oDataModel = this.getModel("dataModel").getData();
-		// 	console.log("aSelectedIndices", aSelectedIndices);
 		
 		// 	if (aSelectedIndices.length === 0) {
 		// 		MessageBox.error("선택한 항목이 없습니다.");
@@ -167,7 +165,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		// 	// 선택된 인덱스를 통해 항목 데이터를 가져와 aItemsToDelete 배열에 추가
 		// 	var aDeletePromises = aSelectedIndices.map(function (iIndex) {
 		// 		var oRowData = oDataModel[iIndex];
-		// 		console.log("or", oRowData);
 		
 		// 		// 삭제할 수 없는 항목을 처리
 		// 		if (oRowData.Status === "생성" || oRowData.ManufacturingOrder) {
@@ -250,20 +247,16 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						var excelBaseDate = new Date(Date.UTC(1900, 0, 0));
 						// 엑셀 날짜는 1일이 1로 표시됨 (86400000 ms = 1일)
 						var jsDate = new Date(excelBaseDate.getTime() + (excelDate - 1) * 86400000);
-						console.log(jsDate);
 						return jsDate;
 					}
 					
 					workbook.SheetNames.forEach(function (sheetName) {
 						var excelData = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
-						console.log("Excel Data:", excelData);
 		
 						var filteredData = excelData.map(function (row) {
 							var date = row["기본 시작일"] || row["MfgOrderPlannedStartDate"];
 							var dates = excelDateToJSDate(parseFloat(date));
 							
-							console.log("row", row);
-							console.log("기본 시작일 값:", dates);
 							return {
 								ProductionPlant: row["플랜트"] || row["ProductionPlant"],
 								SalesOrder: row["판매문서"] || row["SalesOrder"],
@@ -283,9 +276,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						saveProdOrder = saveProdOrder.concat(filteredData.flatMap(function (saveData) {
 							var orders = [];
 							var lotSize = saveData.LotSize ? parseFloat(saveData.LotSize) : parseFloat(saveData.TotalQuantity);
-							console.log("ls",lotSize);
 							var totalQuantity = parseFloat(saveData.TotalQuantity);
-							console.log("total",totalQuantity);
 							 // 값을 문자열로 변환하는 함수
 							 function convertValuesToString(obj) {
 								return Object.fromEntries(
@@ -313,7 +304,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		
 								// 나머지 수량을 처리하기 위한 주문 추가
 								var remainder = totalQuantity % lotSize;
-								console.log("remainder",remainder);
 								if (remainder > 0) {
 									orders.push(convertValuesToString({
 										MfgOrderType: (!saveData.SalesOrder || !saveData.SalesOrderItem ? "2" : "1"),
@@ -367,7 +357,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						}));
 					});
 					
-					console.log("SaveProdOrder:", saveProdOrder);
 					this.saveProdOrder = saveProdOrder;
 					// 날짜 포맷 함수 (시간을 T00:00:00으로 설정)
 					function toDateFormat(dateString) {
@@ -419,8 +408,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						};
 					});
 
-					console.log("postArray", postArray); 
-
 					// 유효성 처리
 					// 1. 오더 유형이 DN01 -> 판매 오더와 판매 오더 문서 없으면 Error
 					// 2. 오더 유형이 DN01 일 때 작업지시 수량 > (판매 오더의 작업지시 수량 - 기생성된 작업수량) 이면 Error
@@ -429,7 +416,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					var that = this;
 					// 1. 유효성 검사를 수행하는 함수
 					function isValid(pData) {
-						console.log("pdata",pData);
 						var oSoModel = that.getModel("soModel").getData();
            				var oMfgOrderGroupModel = that.getOwnerComponent().getModel("mfgOrderGroupModel").getData();
             
@@ -449,7 +435,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 						}
 						// 남은 작업 수량 계산
 						var remainingQty = mfgQty - mfgQtyData;
-						console.log("remaining",mfgQty,mfgQtyData,remainingQty);
 						// 유효성 검사 조건
 						if(remainingQty < 0){
 							return false;
@@ -521,22 +506,16 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 
 					oDataModel.setData(updatedData);
 
-					console.log("업데이트된 오류 데이터:", errData);
-
 					// postArray에서 유효성 검사를 수행하여 유효한 데이터만 필터링
 					var validPostArray = postArray.filter(function(pData) {
 						return isValid(pData);
 					});
 
-					// 이후 validPostArray를 사용하여 POST 요청을 수행하거나 다른 작업을 수행
-					console.log("유효한 데이터 배열:", validPostArray);
-					
 					this.csrfToken = "";
 				
 					// CSRF 토큰을 가져오는 함수 호출
 					this.getCSRFToken().then(function(token) {
 						this.csrfToken = token; // CSRF 토큰 저장
-						console.log("token", this.csrfToken);
 						
 					// POST 요청을 보내는 함수 호출
 					var postPromises = validPostArray.map(function(data,index) {  
@@ -547,12 +526,12 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					// 모든 POST 요청이 완료될 때까지 대기
 					Promise.all(postPromises).then(function() {
 						console.log("모든 POST 요청 완료");
-						//MessageBox.success("작업 지시 처리가 완료되었습니다.");
+						MessageBox.success("작업 지시 처리가 완료되었습니다.");
 						this._getData();
 						
 					}.bind(this)).catch(function(err) {
 						console.error("POST 요청 중 오류 발생:", err);
-						//MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.")
+						MessageBox.error("작업 지시 생성 중 오류가 발생했습니다.")
 						this._getData();
 
 					}.bind(this));
@@ -573,7 +552,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		},		
         
 		postProductionOrder: function(data,index) {
-			console.log("data", data,index);
 			
 			// `$.ajax`를 `Promise`로 래핑
 			return new Promise(function(resolve, reject) {
@@ -610,7 +588,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		// 성공 시 처리 함수 (예: 화면 업데이트)
 		handleSuccess: function(response,index) {
 			var dates = this.saveProdOrder[index].MfgOrderPlannedStartDate;
-			console.log("Response:", response.d);
 			var dataArray = response.d;
 			var updatedOData = {
 				Status: "생성", // 생성
@@ -630,18 +607,15 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				Message: ""
 			};
 
-			console.log("업데이트 값:", updatedOData);
             var oDataModel = this.getOwnerComponent().getModel("dataModel");
             var existingData = oDataModel.getData() || [];
             var updatedData = [];
             if (Array.isArray(existingData)) {
                 // existingData가 배열인 경우, 배열을 병합
                 updatedData = existingData.concat([updatedOData]);
-                console.log("updatedData",updatedData);
             } else {
                 // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
                 updatedData = [updatedOData];
-                console.log("updatedData2",[updatedData]);
             }
             oDataModel.setData(updatedData);
 		},
@@ -649,7 +623,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		// 오류 시 처리 함수
 		handleError: function(xhr,requestData, index) {
 			var dates = this.saveProdOrder[index].MfgOrderPlannedStartDate;
-			console.log("this.saveProdOrder[index]",this.saveProdOrder[index]);
 			var error = "";
 			try {
 				error = xhr.responseJSON.error.message.value;
@@ -658,7 +631,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 			}
 			// 오류 메시지 생성 (예: HTTP 상태 코드 및 에러 메시지)
 			var errorMessage =  "에러 메시지 : " + error;
-			console.log("erromsg", errorMessage);
 			var updatedOData = {
 				Status: "에러", // 에러
 				ManufacturingOrder: "", // 생산 오더
@@ -676,19 +648,15 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 				Yy1ProdText: requestData.YY1_PROD_TEXT_ORD,
 				Message: errorMessage
 			};
-			console.log("변환된 값",updatedOData.MfgOrderPlannedTotalQty);
-			console.log("업데이트 값:", updatedOData);
             var oDataModel = this.getOwnerComponent().getModel("dataModel");
             var existingData = oDataModel.getData() || [];
             var updatedData = [];
             if (Array.isArray(existingData)) {
                 // existingData가 배열인 경우, 배열을 병합
                 updatedData = existingData.concat([updatedOData]);
-                console.log("updatedData",updatedData);
             } else {
                 // existingData가 배열이 아닌 경우, updatedOdata를 사용하여 새로운 배열로 초기화
                 updatedData = [updatedOData];
-                console.log("updatedData2",[updatedData]);
             }
             oDataModel.setData(updatedData);
 			
