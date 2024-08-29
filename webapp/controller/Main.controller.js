@@ -21,14 +21,13 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
     "use strict";
 
 	var EdmType = exportLibrary.EdmType;
-
+	
     return Controller.extend("dinewkorder.controller.Main", {
         onInit: function () {
 			this.getRouter().getRoute("Main").attachMatched(this._onRouteMatched, this);
 
             this._registerForP13n();
-			var oTable = this.byId("dataTable");
-			this.oTable = oTable;
+			
 			
         },
 
@@ -38,7 +37,8 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 
 		_getData: function () {
 			//BusyIndicator.show(0); 전체 로딩바
-			this.oTable.setBusy(true);
+			var oTable = this.byId("dataTable");
+			oTable.setBusy(true);
 			var oMainModel = this.getOwnerComponent().getModel("dineData"); // cus
 			var oDineModel = this.getOwnerComponent().getModel("mainData"); //dev
 			var oDataModel = this.getOwnerComponent().getModel("dataModel");
@@ -79,6 +79,7 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 		
 			// 모든 fetch 작업이 완료될 때까지 기다림
 			Promise.all(fetchPromises).then(function() {
+				var oTable = this.byId("dataTable");
 				// 모든 모델이 이제 가져오고 설정됨
 				var dataModel = this.getOwnerComponent().getModel("dataModel");
 				var mfgOrderModel = this.getModel("mfgOrderModel");
@@ -127,10 +128,10 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 					}
 				}
 				//BusyIndicator.hide(); 전체 로딩바
-				this.oTable.setBusy(false);
+				oTable.setBusy(false);
 			}.bind(this)).catch(function(error) {
 				//BusyIndicator.hide(); 전체 로딩바
-				this.oTable.setBusy(false);
+				oTable.setBusy(false);
 				console.error("모델 처리 중 오류 발생:", error);
 			});
 		},		
@@ -446,11 +447,6 @@ function (Controller, JSONModel, MessageBox, MessageToast, Engine, SelectionCont
 							}
 							if (parseFloat(pData.TotalQuantity) > parseFloat(remainingQty)) {
 								return false; // 작업 지시 수량이 남은 작업 수량보다 크면 유효하지 않음
-							}
-						} else {
-							// DN01이 아닌 경우
-							if (parseFloat(pData.TotalQuantity) > parseFloat(mfgQty)) {
-								return false; // 작업 지시 수량이 판매 오더의 작업 지시 수량보다 크면 유효하지 않음
 							}
 						}
 
